@@ -11,7 +11,9 @@ It does four things:
    + a watchable HTML slideshow you can drop into Canva or screen-record. (If the
    server has `ffmpeg`, it also outputs a finished `.mp4`.)
 3. **Publishes** due posts to TikTok / Instagram / YouTube on a schedule.
-4. **Monetizes** with a Stripe checkout link for your offer.
+4. **Converts** with a **free quote** offer — jobs from **$699** for a full house
+   wash + power wash. Nobody is charged up front; the customer only pays once the
+   work is done. (Optional Stripe deposit is available but off by default.)
 
 Everything runs **today in dry-run mode** with zero setup. You flip it to live by
 adding credentials — nothing else changes.
@@ -87,21 +89,37 @@ export FUNNEL_YOUTUBE_TOKEN="..."
 When both an endpoint and token are set for a platform, the engine switches that
 platform from dry-run to **real posting** automatically.
 
-### 2. Connect Stripe (take payments)
+### 2. The offer (free quote — no upfront charge)
+
+By default the funnel's conversion is a **free quote**, not a payment. The
+customer books, you assess the house, and they **only pay after the work is
+done**. The price is shown as a "from" anchor that scales with house size:
 
 ```bash
-export STRIPE_SECRET="sk_test_..."     # use a test key first, then sk_live_...
-export FUNNEL_OFFER_NAME="Free Pressure Washing Quote — Priority Booking"
-export FUNNEL_OFFER_AMOUNT_CENTS="4900"
+export FUNNEL_OFFER_NAME="Free Quote — Soft Wash + Power Wash"
+export FUNNEL_OFFER_DESC="a light chemical wash that kills mildew and lifts dirt, then a power wash and rinse"
+export FUNNEL_SIZE_NOTE="depending on the size of your home"
+export FUNNEL_FROM_PRICE_CENTS="69900"     # $699 minimum
 export FUNNEL_CURRENCY="cad"
+export FUNNEL_BOOKING_URL="mailto:gulfcoastpaintingpei@gmail.com?subject=Free%20Quote"
+```
+
+`php bin/funnel book` prints the free-quote CTA for your bio / pinned comment.
+
+### 3. (Optional) Take a deposit with Stripe
+
+Off by default. If you ever want to collect a deposit up front, turn it on:
+
+```bash
+export FUNNEL_CHARGE_UPFRONT="true"
+export STRIPE_SECRET="sk_test_..."     # use a test key first, then sk_live_...
 export FUNNEL_SUCCESS_URL="https://yoursite.com/thanks"
 export FUNNEL_CANCEL_URL="https://yoursite.com/"
 ```
 
-`php bin/funnel checkout` then returns a real, payable Stripe Checkout link to put
-in your bio / pinned comment.
+Then `php bin/funnel checkout` returns a real, payable Stripe link.
 
-### 3. Automate the schedule
+### 4. Automate the schedule
 
 Run the publisher every few minutes via cron (or Laravel's scheduler):
 

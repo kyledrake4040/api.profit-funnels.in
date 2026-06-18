@@ -113,19 +113,29 @@ switch ($command) {
         }
         break;
 
+    case 'book':
     case 'checkout':
-        $gateway = $config->stripeSecret ? new StripePaymentGateway($config->stripeSecret) : new FakePaymentGateway();
-        $link = $gateway->createCheckout(
-            $config->offerName,
-            $config->offerAmountCents,
-            $config->currency,
-            $config->checkoutSuccessUrl,
-            $config->checkoutCancelUrl
-        );
-        $mode = $link->live ? 'LIVE' : ($config->stripeSecret ? 'TEST' : 'DEMO (no Stripe key)');
-        line("💳 Checkout [{$mode}]");
-        line("   {$config->offerName} — " . number_format($link->amountCents / 100, 2) . ' ' . strtoupper($link->currency));
-        line("   {$link->url}");
+        $offer = $config->offer();
+        if ($config->chargeUpfront && $config->stripeSecret) {
+            // Optional: charge a deposit up front (off by default).
+            $gateway = new StripePaymentGateway($config->stripeSecret);
+            $link = $gateway->createCheckout(
+                $offer->name,
+                $offer->fromPriceCents,
+                $config->currency,
+                $config->checkoutSuccessUrl,
+                $config->checkoutCancelUrl
+            );
+            line("💳 Deposit checkout [" . ($link->live ? 'LIVE' : 'TEST') . "]");
+            line("   {$offer->name} — {$offer->priceLabel()}");
+            line("   {$link->url}");
+            break;
+        }
+        // Default: free quote, no upfront charge.
+        line("📅 Free quote (no payment today)");
+        line("   {$offer->name} — jobs {$offer->priceLabel()}");
+        line("   You only pay once the work is done.");
+        line("   Book: {$offer->bookingUrl}");
         break;
 
     case 'demo':
@@ -161,13 +171,18 @@ switch ($command) {
         }
         line();
 
-        line("STEP 4 — The money step (checkout link in your bio / pinned comment)");
-        $gateway = $config->stripeSecret ? new StripePaymentGateway($config->stripeSecret) : new FakePaymentGateway();
-        $link = $gateway->createCheckout($config->offerName, $config->offerAmountCents, $config->currency, $config->checkoutSuccessUrl, $config->checkoutCancelUrl);
-        line("   💳 {$config->offerName}: {$link->url}");
+        line("STEP 4 — The conversion step (link in your bio / pinned comment)");
+        $offer = $config->offer();
+        if ($config->chargeUpfront && $config->stripeSecret) {
+            $link = (new StripePaymentGateway($config->stripeSecret))
+                ->createCheckout($offer->name, $offer->fromPriceCents, $config->currency, $config->checkoutSuccessUrl, $config->checkoutCancelUrl);
+            line("   💳 {$offer->name} (deposit): {$link->url}");
+        } else {
+            line("   📅 {$offer->cta()}");
+        }
         line();
         line(str_repeat('-', 60));
         line("Videos: storage/funnel/output/<post>/player.html");
-        line("To go live: connect socials + Stripe — see FUNNEL.md");
+        line("To go live: connect socials (+ optional Stripe) — see FUNNEL.md");
         break;
 }

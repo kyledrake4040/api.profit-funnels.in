@@ -21,8 +21,17 @@ final class FunnelConfig
         /** @var string[] list of platform keys: tiktok, instagram, youtube */
         public readonly array $platforms,
         public readonly string $offerName,
-        public readonly int $offerAmountCents,
+        /** Plain-language description of the job. */
+        public readonly string $offerDescription,
+        /** Why the price varies. */
+        public readonly string $sizeNote,
+        /** Minimum job price ("jobs from $X"). NOT charged upfront. */
+        public readonly int $fromPriceCents,
         public readonly string $currency,
+        /** Where a "book a free quote" CTA points (booking form / mailto). */
+        public readonly string $bookingUrl,
+        /** When false (default) the funnel never charges before the work. */
+        public readonly bool $chargeUpfront,
         public readonly ?string $stripeSecret,
         public readonly string $checkoutSuccessUrl,
         public readonly string $checkoutCancelUrl,
@@ -35,7 +44,7 @@ final class FunnelConfig
 
         $services = array_values(array_filter(array_map(
             'trim',
-            explode(',', (string) $env('FUNNEL_SERVICES', 'golf course painting,pressure washing'))
+            explode(',', (string) $env('FUNNEL_SERVICES', 'house washing,pressure washing,exterior painting'))
         )));
 
         $platforms = array_values(array_filter(array_map(
@@ -43,18 +52,42 @@ final class FunnelConfig
             explode(',', (string) $env('FUNNEL_PLATFORMS', 'tiktok,instagram,youtube'))
         )));
 
+        $contactEmail = (string) $env('FUNNEL_CONTACT_EMAIL', 'gulfcoastpaintingpei@gmail.com');
+
         return new self(
             businessName: (string) $env('FUNNEL_BUSINESS_NAME', 'Gulf Coast Painting PEI'),
             location: (string) $env('FUNNEL_LOCATION', 'Prince Edward Island'),
             services: $services,
-            contactEmail: (string) $env('FUNNEL_CONTACT_EMAIL', 'gulfcoastpaintingpei@gmail.com'),
+            contactEmail: $contactEmail,
             platforms: $platforms,
-            offerName: (string) $env('FUNNEL_OFFER_NAME', 'Free Pressure Washing Quote — Priority Booking'),
-            offerAmountCents: (int) $env('FUNNEL_OFFER_AMOUNT_CENTS', '4900'),
+            offerName: (string) $env('FUNNEL_OFFER_NAME', 'Free Quote — Soft Wash + Power Wash'),
+            offerDescription: (string) $env(
+                'FUNNEL_OFFER_DESC',
+                'a light chemical wash that kills mildew and lifts dirt, then a power wash and rinse'
+            ),
+            sizeNote: (string) $env('FUNNEL_SIZE_NOTE', 'depending on the size of your home'),
+            fromPriceCents: (int) $env('FUNNEL_FROM_PRICE_CENTS', '69900'),
             currency: (string) $env('FUNNEL_CURRENCY', 'cad'),
+            bookingUrl: (string) $env(
+                'FUNNEL_BOOKING_URL',
+                'mailto:' . $contactEmail . '?subject=Free%20Quote%20-%20House%20Wash%20%26%20Power%20Wash'
+            ),
+            chargeUpfront: filter_var($env('FUNNEL_CHARGE_UPFRONT', 'false'), FILTER_VALIDATE_BOOL),
             stripeSecret: $env('STRIPE_SECRET'),
             checkoutSuccessUrl: (string) $env('FUNNEL_SUCCESS_URL', 'https://example.com/thanks'),
             checkoutCancelUrl: (string) $env('FUNNEL_CANCEL_URL', 'https://example.com/'),
+        );
+    }
+
+    public function offer(): BookingOffer
+    {
+        return new BookingOffer(
+            name: $this->offerName,
+            fromPriceCents: $this->fromPriceCents,
+            currency: $this->currency,
+            bookingUrl: $this->bookingUrl,
+            description: $this->offerDescription,
+            sizeNote: $this->sizeNote,
         );
     }
 }

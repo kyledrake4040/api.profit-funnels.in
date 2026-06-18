@@ -79,6 +79,16 @@ final class ContentPlanner
             ],
         ],
         [
+            'title' => 'Soft wash vs. blasting',
+            'hook' => 'Why blasting your house with a pressure washer can do more harm than good',
+            'steps' => [
+                'Full-pressure on siding forces water underneath and strips paint.',
+                'Pros soft wash first — a light chemical clean that kills mildew at the root.',
+                'Then a controlled power wash + rinse lifts the dead grime away.',
+                'It stays clean far longer because the mildew is dead, not just moved.',
+            ],
+        ],
+        [
             'title' => 'Mildew on shady walls',
             'hook' => 'The black spots on your north wall aren’t mould — usually',
             'steps' => [
@@ -138,9 +148,10 @@ final class ContentPlanner
             $topic['steps'],
         ));
 
-        // Value-first caption: the tip is the point; the brand is a soft footer.
+        // Value-first caption: the tip is the point; the offer is a soft footer.
         $caption = $this->stripFormat($hook) . ' 👇 '
-            . 'Save this for later. Honest home-care tips from ' . $biz . ' in ' . $loc . '.';
+            . 'Save this for later. Honest home-care tips from ' . $biz . ' in ' . $loc . '. '
+            . $this->config->offer()->captionFooter();
 
         $canvaBrief = implode("\n", [
             'CANVA BRIEF (value tip — ' . $topic['title'] . '):',

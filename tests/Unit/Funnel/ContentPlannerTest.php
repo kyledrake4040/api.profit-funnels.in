@@ -16,12 +16,16 @@ final class ContentPlannerTest extends TestCase
         return new FunnelConfig(
             businessName: 'Gulf Coast Painting PEI',
             location: 'Prince Edward Island',
-            services: ['golf course painting', 'pressure washing'],
+            services: ['house washing', 'pressure washing'],
             contactEmail: 'test@example.com',
             platforms: ['tiktok', 'instagram', 'youtube'],
-            offerName: 'Quote',
-            offerAmountCents: 4900,
+            offerName: 'Free Quote — Soft Wash + Power Wash',
+            offerDescription: 'a light chemical wash that kills mildew, then a power wash and rinse',
+            sizeNote: 'depending on the size of your home',
+            fromPriceCents: 69900,
             currency: 'cad',
+            bookingUrl: 'mailto:test@example.com',
+            chargeUpfront: false,
             stripeSecret: null,
             checkoutSuccessUrl: 'https://x/ok',
             checkoutCancelUrl: 'https://x/no',
@@ -59,6 +63,16 @@ final class ContentPlannerTest extends TestCase
             // Should teach something: multi-step tip.
             self::assertGreaterThanOrEqual(2, substr_count($post->script, "\n"));
         }
+    }
+
+    public function test_business_captions_carry_the_free_quote_offer(): void
+    {
+        $post = (new ContentPlanner($this->config()))->plan(1, 1_000_000)[0];
+
+        self::assertSame(VideoPost::TYPE_BUSINESS, $post->type);
+        self::assertStringContainsString('from $699', $post->caption);
+        self::assertStringContainsString('Free quote', $post->caption);
+        self::assertStringContainsString('after', $post->caption);
     }
 
     public function test_posts_are_scheduled_at_increasing_times(): void
