@@ -21,3 +21,7 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 Route::group(['prefix' => 'auth'], function () {
     Route::post("login", [\App\Http\Controllers\Api\AuthController::class, 'login'])->name('auth.login');
 });
+
+// Stripe webhook — public endpoint, authenticated via signature verification.
+Route::post('stripe/webhook', [\App\Http\Controllers\Api\StripeWebhookController::class, 'handle'])
+    ->name('stripe.webhook');
