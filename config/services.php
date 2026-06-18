@@ -36,4 +36,8 @@ return [
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
     ],
 
+    'hubspot' => [
+        'token' => env('HUBSPOT_TOKEN'),
+    ],
+
 ];
