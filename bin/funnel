@@ -1,0 +1,173 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Profit Funnel engine — command line.
+ *
+ *   php bin/funnel plan [count]   Plan an alternating content calendar
+ *   php bin/funnel build          Render videos (frames + HTML player [+ mp4])
+ *   php bin/funnel run            Publish any due posts (dry-run until connected)
+ *   php bin/funnel checkout       Create a payment checkout link
+ *   php bin/funnel demo [count]   Do all of the above end-to-end
+ *
+ * Runs with zero setup in dry-run mode. Add credentials (social + Stripe) to
+ * go live — see FUNNEL.md.
+ */
+
+require __DIR__ . '/../vendor/autoload.php';
+
+use App\Funnel\Content\ContentPlanner;
+use App\Funnel\Content\VideoBuilder;
+use App\Funnel\FunnelConfig;
+use App\Funnel\Payments\FakePaymentGateway;
+use App\Funnel\Payments\StripePaymentGateway;
+use App\Funnel\Publishing\ApiPublisher;
+use App\Funnel\Publishing\DryRunPublisher;
+use App\Funnel\Scheduler;
+use App\Funnel\Storage\JsonVideoStore;
+
+$root = dirname(__DIR__);
+$storeDir = $root . '/storage/funnel';
+$config = FunnelConfig::fromEnv();
+$store = new JsonVideoStore($storeDir . '/queue.json');
+
+$command = $argv[1] ?? 'demo';
+$arg = isset($argv[2]) ? (int) $argv[2] : null;
+
+function line(string $s = ''): void
+{
+    echo $s . PHP_EOL;
+}
+
+function publishers(FunnelConfig $config): array
+{
+    $list = [];
+    foreach ($config->platforms as $platform) {
+        $api = ApiPublisher::fromEnv($platform);
+        $list[] = $api->isConnected() ? $api : new DryRunPublisher($platform);
+    }
+
+    return $list;
+}
+
+function doPlan(JsonVideoStore $store, ContentPlanner $planner, int $count): array
+{
+    $posts = $planner->plan($count, time());
+    foreach ($posts as $post) {
+        $store->save($post);
+    }
+
+    return $posts;
+}
+
+$planner = new ContentPlanner($config);
+
+switch ($command) {
+    case 'plan':
+        $posts = doPlan($store, $planner, $arg ?? 6);
+        line("Planned " . count($posts) . " posts for {$config->businessName}:");
+        line();
+        foreach ($posts as $i => $post) {
+            $tag = $post->type === 'business' ? '🏠 BUSINESS (value)' : '🔥 VIRAL';
+            line(sprintf("  %d. [%s] %s", $i + 1, $tag, $post->title));
+            line("     hook: {$post->hook}");
+            line("     " . implode(' ', $post->hashtags));
+            line();
+        }
+        line("Saved to storage/funnel/queue.json");
+        break;
+
+    case 'build':
+        $builder = new VideoBuilder($storeDir . '/output');
+        $pending = $store->all();
+        if ($pending === []) {
+            $pending = doPlan($store, $planner, $arg ?? 6);
+        }
+        line("Building " . count($pending) . " videos...");
+        line();
+        foreach ($pending as $post) {
+            $m = $builder->build($post);
+            $what = $m['mp4'] ? "🎬 " . basename($m['mp4']) : ($m['cards'] . " frames + player.html");
+            line("  ✅ {$post->title}");
+            line("     → {$what}  ({$m['dir']})");
+        }
+        line();
+        line("Open any player.html in a browser to watch. Frames are ready for Canva.");
+        break;
+
+    case 'run':
+        $scheduler = new Scheduler($store, publishers($config));
+        $report = $scheduler->run(time());
+        if ($report === []) {
+            line("No posts are due right now.");
+            break;
+        }
+        foreach ($report as $postId => $results) {
+            line("📤 {$postId}");
+            foreach ($results as $platform => $result) {
+                $icon = $result->success ? '✅' : '❌';
+                line("   {$icon} {$platform}: {$result->message}");
+            }
+        }
+        break;
+
+    case 'checkout':
+        $gateway = $config->stripeSecret ? new StripePaymentGateway($config->stripeSecret) : new FakePaymentGateway();
+        $link = $gateway->createCheckout(
+            $config->offerName,
+            $config->offerAmountCents,
+            $config->currency,
+            $config->checkoutSuccessUrl,
+            $config->checkoutCancelUrl
+        );
+        $mode = $link->live ? 'LIVE' : ($config->stripeSecret ? 'TEST' : 'DEMO (no Stripe key)');
+        line("💳 Checkout [{$mode}]");
+        line("   {$config->offerName} — " . number_format($link->amountCents / 100, 2) . ' ' . strtoupper($link->currency));
+        line("   {$link->url}");
+        break;
+
+    case 'demo':
+    default:
+        $count = $arg ?? 6;
+        line(str_repeat('=', 60));
+        line("  PROFIT FUNNEL — {$config->businessName} ({$config->location})");
+        line(str_repeat('=', 60));
+        line();
+        line("STEP 1 — Plan {$count} posts (every 2nd = your business, value-first)");
+        $posts = doPlan($store, $planner, $count);
+        foreach ($posts as $i => $post) {
+            $tag = $post->type === 'business' ? '🏠' : '🔥';
+            line(sprintf("   %d. %s %s", $i + 1, $tag, $post->title));
+        }
+        line();
+
+        line("STEP 2 — Build the videos");
+        $builder = new VideoBuilder($storeDir . '/output');
+        foreach ($posts as $post) {
+            $m = $builder->build($post);
+            $what = $m['mp4'] ? basename($m['mp4']) : "{$m['cards']} frames + player.html";
+            line("   ✅ {$post->title} → {$what}");
+        }
+        line();
+
+        line("STEP 3 — Publish due posts");
+        $report = (new Scheduler($store, publishers($config)))->run(time());
+        foreach ($report as $postId => $results) {
+            foreach ($results as $platform => $result) {
+                line("   " . ($result->success ? '✅' : '❌') . " {$platform}: {$result->message}");
+            }
+        }
+        line();
+
+        line("STEP 4 — The money step (checkout link in your bio / pinned comment)");
+        $gateway = $config->stripeSecret ? new StripePaymentGateway($config->stripeSecret) : new FakePaymentGateway();
+        $link = $gateway->createCheckout($config->offerName, $config->offerAmountCents, $config->currency, $config->checkoutSuccessUrl, $config->checkoutCancelUrl);
+        line("   💳 {$config->offerName}: {$link->url}");
+        line();
+        line(str_repeat('-', 60));
+        line("Videos: storage/funnel/output/<post>/player.html");
+        line("To go live: connect socials + Stripe — see FUNNEL.md");
+        break;
+}
