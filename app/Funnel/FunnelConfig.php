@@ -20,6 +20,10 @@ final class FunnelConfig
         public readonly string $contactEmail,
         /** @var string[] list of platform keys: tiktok, instagram, youtube */
         public readonly array $platforms,
+        /** Posts/day per social platform (via GHL). High values risk bans. */
+        public readonly int $socialsPerDay,
+        /** Before/after posts/day on Google Business Profile. */
+        public readonly int $gbpPerDay,
         public readonly string $offerName,
         /** Plain-language description of the job. */
         public readonly string $offerDescription,
@@ -60,6 +64,8 @@ final class FunnelConfig
             services: $services,
             contactEmail: $contactEmail,
             platforms: $platforms,
+            socialsPerDay: max(1, (int) $env('FUNNEL_POSTS_PER_DAY', '3')),
+            gbpPerDay: max(1, (int) $env('FUNNEL_GBP_POSTS_PER_DAY', '3')),
             offerName: (string) $env('FUNNEL_OFFER_NAME', 'Free Quote — Soft Wash + Power Wash'),
             offerDescription: (string) $env(
                 'FUNNEL_OFFER_DESC',

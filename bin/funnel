@@ -7,9 +7,10 @@ declare(strict_types=1);
  * Profit Funnel engine — command line.
  *
  *   php bin/funnel plan [count]   Plan an alternating content calendar
- *   php bin/funnel build          Render videos (frames + HTML player [+ mp4])
+ *   php bin/funnel schedule [days] Plan a full cadence: socials/day + GBP/day
+ *   php bin/funnel build          Render everything queued (videos + GBP cards)
  *   php bin/funnel run            Publish any due posts (dry-run until connected)
- *   php bin/funnel checkout       Create a payment checkout link
+ *   php bin/funnel book           Show the free-quote CTA (checkout if enabled)
  *   php bin/funnel demo [count]   Do all of the above end-to-end
  *
  * Runs with zero setup in dry-run mode. Add credentials (social + Stripe) to
@@ -18,6 +19,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../vendor/autoload.php';
 
+use App\Funnel\Content\BeforeAfterCard;
 use App\Funnel\Content\ContentPlanner;
 use App\Funnel\Content\VideoBuilder;
 use App\Funnel\FunnelConfig;
@@ -44,12 +46,35 @@ function line(string $s = ''): void
 function publishers(FunnelConfig $config): array
 {
     $list = [];
-    foreach ($config->platforms as $platform) {
+    // Social platforms (via GHL) plus Google Business Profile.
+    foreach (array_merge($config->platforms, ['gbp']) as $platform) {
         $api = ApiPublisher::fromEnv($platform);
         $list[] = $api->isConnected() ? $api : new DryRunPublisher($platform);
     }
 
     return $list;
+}
+
+function renderPost(VideoBuilder $videoBuilder, BeforeAfterCard $card, FunnelConfig $config, string $storeDir, $post): string
+{
+    if ($post->type === \App\Funnel\VideoPost::TYPE_BEFORE_AFTER) {
+        $dir = $storeDir . '/output/' . $post->id;
+        if (! is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+        // Use real photos if present: storage/funnel/photos/<id>/before.* + after.*
+        $photoDir = $storeDir . '/photos/' . $post->id;
+        $before = current(glob($photoDir . '/before.*') ?: []) ?: null;
+        $after = current(glob($photoDir . '/after.*') ?: []) ?: null;
+        $out = $dir . '/before_after.png';
+        $card->render($before ?: null, $after ?: null, $config->businessName, $out);
+
+        return ($before && $after) ? 'before/after card (real photos)' : 'before/after card (PLACEHOLDER — add real photos)';
+    }
+
+    $m = $videoBuilder->build($post);
+
+    return $m['mp4'] ? basename($m['mp4']) : "{$m['cards']} frames + player.html";
 }
 
 function doPlan(JsonVideoStore $store, ContentPlanner $planner, int $count): array
@@ -79,22 +104,46 @@ switch ($command) {
         line("Saved to storage/funnel/queue.json");
         break;
 
+    case 'schedule':
+        $days = $arg ?? 1;
+        $now = time();
+        $socials = $planner->planForDays($days, $config->socialsPerDay, $now);
+        $gbp = $planner->planBeforeAfter($days, $config->gbpPerDay, $now);
+        foreach (array_merge($socials, $gbp) as $post) {
+            $store->save($post);
+        }
+        $platformCount = max(1, count($config->platforms));
+        line("Scheduled {$days} day(s):");
+        line("  • Socials (" . implode(', ', $config->platforms) . "): {$config->socialsPerDay}/day each, half viral / half business");
+        line("  • Google Business Profile: {$config->gbpPerDay}/day before & after");
+        line("  Total content pieces queued: " . count($socials) . " social + " . count($gbp) . " GBP");
+        if (ContentPlanner::isAggressiveCadence($config->socialsPerDay)) {
+            line();
+            line("⚠️  {$config->socialsPerDay} posts/day per platform is well above what the");
+            line("    algorithms reward (1–4/day) and risks spam flags / shadowbans /");
+            line("    account suspension. Fewer, better videos win. Set a safer cadence with");
+            line("    FUNNEL_POSTS_PER_DAY. YouTube's API also can't sustain this volume.");
+        }
+        line();
+        line("Next: php bin/funnel build   (renders everything queued)");
+        break;
+
     case 'build':
         $builder = new VideoBuilder($storeDir . '/output');
+        $card = new BeforeAfterCard();
         $pending = $store->all();
         if ($pending === []) {
             $pending = doPlan($store, $planner, $arg ?? 6);
         }
-        line("Building " . count($pending) . " videos...");
+        line("Building " . count($pending) . " pieces...");
         line();
         foreach ($pending as $post) {
-            $m = $builder->build($post);
-            $what = $m['mp4'] ? "🎬 " . basename($m['mp4']) : ($m['cards'] . " frames + player.html");
+            $what = renderPost($builder, $card, $config, $storeDir, $post);
             line("  ✅ {$post->title}");
-            line("     → {$what}  ({$m['dir']})");
+            line("     → {$what}");
         }
         line();
-        line("Open any player.html in a browser to watch. Frames are ready for Canva.");
+        line("Videos: open player.html. GBP: before_after.png. Frames are Canva-ready.");
         break;
 
     case 'run':

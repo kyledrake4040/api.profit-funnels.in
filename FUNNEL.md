@@ -139,6 +139,55 @@ export FUNNEL_FONT="/path/to/a/Bold.ttf"   # nicer frame text
 
 ---
 
+## Channels & cadence (GHL + Google Business Profile)
+
+The engine treats your channels separately so each gets the right content and
+frequency:
+
+```bash
+php bin/funnel schedule 7      # plan a week across all channels
+```
+
+- **Socials via GHL** (TikTok / Instagram / YouTube): an alternating stream —
+  half value-first business tips, half viral-style — built to the researched
+  retention rules. Cadence: `FUNNEL_POSTS_PER_DAY` (default **3**).
+- **Google Business Profile**: before/after photo posts. Cadence:
+  `FUNNEL_GBP_POSTS_PER_DAY` (default **3**).
+
+### Connect GHL
+
+GoHighLevel is the realistic backbone for posting to all your socials at once.
+Point each platform's publisher at your GHL posting endpoint + token:
+
+```bash
+export FUNNEL_TIKTOK_ENDPOINT="https://<your-ghl-posting-webhook>"
+export FUNNEL_TIKTOK_TOKEN="<token>"
+# ...same for INSTAGRAM, YOUTUBE, and GBP
+export FUNNEL_GBP_ENDPOINT="https://<your-ghl-gbp-webhook>"
+export FUNNEL_GBP_TOKEN="<token>"
+```
+
+### Before/after photos (use REAL ones)
+
+GBP cards pull your real job photos from:
+
+```
+storage/funnel/photos/<post-id>/before.jpg
+storage/funnel/photos/<post-id>/after.jpg
+```
+
+Until you add them, the card renders a clearly-marked placeholder. **Do not post
+fabricated before/afters** — Google can suspend the listing for it and customers
+notice. A painting company already has the real shots; this just formats them.
+
+### ⚠️ About very high volume (e.g. 50/day)
+
+Posting 50×/day per platform is **counterproductive**: TikTok/Instagram/YouTube
+reward watch time and consistency, not raw volume; over-posting triggers spam
+detection, shadowbans, and suspensions, and YouTube's API can't sustain it. The
+engine *lets* you set a high cadence, but warns you. The recommended path to
+revenue is a smaller number of genuinely good videos.
+
 ## A note on expectations
 
 This engine removes the *busywork* — ideas, scripts, captions, draft videos,

@@ -19,6 +19,8 @@ final class ContentPlannerTest extends TestCase
             services: ['house washing', 'pressure washing'],
             contactEmail: 'test@example.com',
             platforms: ['tiktok', 'instagram', 'youtube'],
+            socialsPerDay: 3,
+            gbpPerDay: 3,
             offerName: 'Free Quote — Soft Wash + Power Wash',
             offerDescription: 'a light chemical wash that kills mildew, then a power wash and rinse',
             sizeNote: 'depending on the size of your home',
@@ -82,6 +84,38 @@ final class ContentPlannerTest extends TestCase
         self::assertSame(1_000_000, $posts[0]->scheduledAt);
         self::assertSame(1_003_600, $posts[1]->scheduledAt);
         self::assertSame(1_010_800, $posts[3]->scheduledAt);
+    }
+
+    public function test_plan_for_days_creates_per_day_times_days_posts(): void
+    {
+        $posts = (new ContentPlanner($this->config()))->planForDays(3, 4, 1_700_000_000);
+
+        self::assertCount(12, $posts);
+    }
+
+    public function test_plan_for_days_still_alternates_business_and_viral(): void
+    {
+        $posts = (new ContentPlanner($this->config()))->planForDays(1, 4, 1_700_000_000);
+
+        self::assertSame(VideoPost::TYPE_BUSINESS, $posts[0]->type);
+        self::assertSame(VideoPost::TYPE_VIRAL, $posts[1]->type);
+        self::assertSame(VideoPost::TYPE_BUSINESS, $posts[2]->type);
+    }
+
+    public function test_plan_for_days_spreads_posts_within_each_day(): void
+    {
+        $posts = (new ContentPlanner($this->config()))->planForDays(2, 3, 1_700_000_000);
+
+        // All 3 of day 1 happen before day 2 starts; times strictly increase.
+        for ($i = 1; $i < \count($posts); $i++) {
+            self::assertGreaterThan($posts[$i - 1]->scheduledAt, $posts[$i]->scheduledAt);
+        }
+    }
+
+    public function test_aggressive_cadence_is_flagged(): void
+    {
+        self::assertTrue(ContentPlanner::isAggressiveCadence(50));
+        self::assertFalse(ContentPlanner::isAggressiveCadence(3));
     }
 
     public function test_posts_carry_platforms_and_hashtags(): void

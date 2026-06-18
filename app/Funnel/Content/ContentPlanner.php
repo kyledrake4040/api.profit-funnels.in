@@ -109,8 +109,21 @@ final class ContentPlanner
         'Day-in-the-life / behind the scenes',
     ];
 
+    /**
+     * Above this many posts/day per platform, the algorithm punishes you and
+     * accounts risk spam flags. Used to warn, not to block.
+     */
+    public const SAFE_MAX_PER_DAY = 5;
+
+    /** Posting window each day (local hours) over which posts are spread. */
+    private const WINDOW_START_HOUR = 8;
+    private const WINDOW_END_HOUR = 22;
+
+    private readonly ViralPlaybook $playbook;
+
     public function __construct(private readonly FunnelConfig $config)
     {
+        $this->playbook = new ViralPlaybook();
     }
 
     /**
@@ -123,16 +136,96 @@ final class ContentPlanner
     public function plan(int $count, int $startAt, int $intervalSec = 43200): array
     {
         $posts = [];
-        $services = $this->config->services !== [] ? $this->config->services : ['our services'];
-
         for ($i = 0; $i < $count; $i++) {
-            $scheduledAt = $startAt + ($i * $intervalSec);
-            $posts[] = ($i % 2) === 0
-                ? $this->businessPost($i, $scheduledAt)
-                : $this->viralPost($i, $services[$i % \count($services)], $scheduledAt);
+            $posts[] = $this->makePost($i, $startAt + ($i * $intervalSec));
         }
 
         return $posts;
+    }
+
+    /**
+     * Plan a realistic cadence: $perDay posts per day, spread across the daily
+     * posting window, for $days days. Same content stream alternates
+     * business/viral. (The scheduler posts each to every configured platform.)
+     *
+     * @return VideoPost[]
+     */
+    public function planForDays(int $days, int $perDay, int $startAt): array
+    {
+        $perDay = max(1, $perDay);
+        $windowSeconds = (self::WINDOW_END_HOUR - self::WINDOW_START_HOUR) * 3600;
+        $spacing = $perDay > 1 ? intdiv($windowSeconds, $perDay - 1) : 0;
+        $dayStart = $startAt - ($startAt % 86400) + (self::WINDOW_START_HOUR * 3600);
+
+        $posts = [];
+        $index = 0;
+        for ($d = 0; $d < $days; $d++) {
+            for ($k = 0; $k < $perDay; $k++) {
+                $at = $dayStart + ($d * 86400) + ($k * $spacing);
+                $posts[] = $this->makePost($index, $at);
+                $index++;
+            }
+        }
+
+        return $posts;
+    }
+
+    /** True when a requested cadence is into spam/ban territory. */
+    public static function isAggressiveCadence(int $perDay): bool
+    {
+        return $perDay > self::SAFE_MAX_PER_DAY;
+    }
+
+    /**
+     * Plan Google Business Profile before/after photo posts ($perDay per day for
+     * $days days). These post to the "gbp" channel and use the company's REAL
+     * job photos (the builder marks placeholders until they're supplied).
+     *
+     * @return VideoPost[]
+     */
+    public function planBeforeAfter(int $days, int $perDay, int $startAt): array
+    {
+        $perDay = max(1, $perDay);
+        $windowSeconds = (self::WINDOW_END_HOUR - self::WINDOW_START_HOUR) * 3600;
+        $spacing = $perDay > 1 ? intdiv($windowSeconds, $perDay - 1) : 0;
+        $dayStart = $startAt - ($startAt % 86400) + (self::WINDOW_START_HOUR * 3600);
+        $biz = $this->config->businessName;
+        $loc = $this->config->location;
+
+        $posts = [];
+        $index = 0;
+        for ($d = 0; $d < $days; $d++) {
+            for ($k = 0; $k < $perDay; $k++) {
+                $at = $dayStart + ($d * 86400) + ($k * $spacing);
+                $hook = 'Real before & after — ' . $loc . ' home';
+                $caption = $biz . ' before & after in ' . $loc . '. '
+                    . $this->config->offer()->captionFooter();
+                $posts[] = new VideoPost(
+                    id: sprintf('gbp_%03d_%d', $index, $at),
+                    type: VideoPost::TYPE_BEFORE_AFTER,
+                    title: 'Before & After — ' . $loc,
+                    hook: $hook,
+                    script: 'Drop in a real BEFORE photo (left) and AFTER photo (right).',
+                    caption: $caption,
+                    hashtags: $this->hashtags('before and after'),
+                    canvaBrief: 'GBP before/after card: use real job photos; left = before, right = after.',
+                    scheduledAt: $at,
+                    platforms: ['gbp'],
+                );
+                $index++;
+            }
+        }
+
+        return $posts;
+    }
+
+    private function makePost(int $index, int $scheduledAt): VideoPost
+    {
+        $services = $this->config->services !== [] ? $this->config->services : ['our services'];
+
+        return ($index % 2) === 0
+            ? $this->businessPost($index, $scheduledAt)
+            : $this->viralPost($index, $services[$index % \count($services)], $scheduledAt);
     }
 
     private function businessPost(int $index, int $scheduledAt): VideoPost
@@ -159,7 +252,7 @@ final class ContentPlanner
             '- Card 1: bold hook only — "' . $this->stripFormat($hook) . '"',
             '- One tip per card, big readable text, calm satisfying b-roll.',
             '- Last card: small logo + "' . $biz . '" (no hard sell).',
-            '- Trending low-key audio; keep it helpful, not salesy.',
+            $this->playbook->retentionBrief(),
         ]);
 
         return new VideoPost(
@@ -181,21 +274,21 @@ final class ContentPlanner
         $format = self::VIRAL_FORMATS[$index % \count(self::VIRAL_FORMATS)];
         $biz = $this->config->businessName;
 
-        $hook = 'You won’t believe how satisfying this ' . $service . ' clip is 🤯';
+        // Research-backed scroll-stopping hook (rotates proven formulas, < 12 words).
+        $hook = $this->playbook->hookFor($service, $index);
         $script = implode("\n", [
-            'Format: ' . $this->stripFormat($format) . '.',
-            '1. First 1s = pattern interrupt + bold on-screen hook.',
-            '2. 2–8s = the satisfying / relatable payoff.',
-            '3. Last 2s = soft brand mention + "follow for more".',
+            'Format: ' . $this->stripFormat($format) . ' (' . $this->playbook->formulaType($index) . ' hook).',
+            '1. 0–1.3s = bold on-screen hook + visual pattern interrupt.',
+            '2. 2–' . ViralPlaybook::TARGET_MAX_SECONDS . 's = satisfying / relatable payoff, fast cuts.',
+            '3. Last 2s = soft brand mention + "follow for more"; end on a loop.',
         ]);
         $caption = $this->stripFormat($hook) . ' Follow ' . $biz . ' for more 🔥';
 
         $canvaBrief = implode("\n", [
             'CANVA BRIEF (viral-style — ' . $this->stripFormat($format) . '):',
-            '- Format: 9:16 vertical, 7–12s, trending audio.',
-            '- Strong on-screen hook in the first second.',
-            '- Fast cuts every 1–2s; subtle brand watermark.',
-            '- CTA sticker: "Follow for more".',
+            '- Hook: "' . $this->stripFormat($hook) . '"',
+            $this->playbook->retentionBrief(),
+            '- Subtle brand watermark; CTA sticker: "Follow for more".',
         ]);
 
         return new VideoPost(

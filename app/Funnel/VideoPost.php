@@ -11,6 +11,7 @@ final class VideoPost
 {
     public const TYPE_BUSINESS = 'business';
     public const TYPE_VIRAL = 'viral';
+    public const TYPE_BEFORE_AFTER = 'before_after';
 
     public const STATUS_PENDING = 'pending';
     public const STATUS_PUBLISHED = 'published';
