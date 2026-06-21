@@ -19,6 +19,7 @@ RUN composer install --no-interaction --no-progress --no-dev \
 
 # The engine stays dormant until FUNNEL_ENABLED=true is set in the environment.
 ENV FUNNEL_ENABLED=false
-ENV FUNNEL_RUN_INTERVAL=300
 
-ENTRYPOINT ["bash", "deploy/run-loop.sh"]
+# Run Laravel's scheduler in the foreground; it fires `funnel:run` every 5
+# minutes (see routes/console.php) with overlap-protection and logging.
+ENTRYPOINT ["php", "artisan", "schedule:work"]

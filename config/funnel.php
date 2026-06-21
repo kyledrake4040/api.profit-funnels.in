@@ -40,4 +40,19 @@ return [
 
     'json_store_path' => env('FUNNEL_JSON_STORE_PATH'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Engine master switch & queue path
+    |--------------------------------------------------------------------------
+    |
+    | "enabled" mirrors FUNNEL_ENABLED: the engine stays dormant (publishes
+    | nothing) until it is true. "queue_path" is where the content queue lives;
+    | overridable so tests can isolate it.
+    |
+    */
+
+    'enabled' => env('FUNNEL_ENABLED', false),
+
+    'queue_path' => env('FUNNEL_QUEUE_PATH'),
+
 ];
