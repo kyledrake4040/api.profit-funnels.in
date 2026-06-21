@@ -1,33 +1,38 @@
 <?php
 
-return [
+/*
+|--------------------------------------------------------------------------
+| Cross-Origin Resource Sharing (CORS) Configuration
+|--------------------------------------------------------------------------
+|
+| Allowed origins are restricted to an explicit allow-list (no wildcard).
+| Set CORS_ALLOWED_ORIGINS to a comma-separated list of front-end origins;
+| it falls back to APP_URL. Note: the webhook endpoints are server-to-server
+| and unaffected by CORS — this only governs browser callers (the SPA/login).
+|
+*/
 
-    /*
-    |--------------------------------------------------------------------------
-    | Cross-Origin Resource Sharing (CORS) Configuration
-    |--------------------------------------------------------------------------
-    |
-    | Here you may configure your settings for cross-origin resource sharing
-    | or "CORS". This determines what cross-origin operations may execute
-    | in web browsers. You are free to adjust these settings as needed.
-    |
-    | To learn more: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
-    |
-    */
+$origins = (string) env('CORS_ALLOWED_ORIGINS', '');
+
+$allowedOrigins = $origins !== ''
+    ? array_values(array_filter(array_map('trim', explode(',', $origins))))
+    : [(string) env('APP_URL', 'http://localhost')];
+
+return [
 
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
-    'allowed_methods' => ['*'],
+    'allowed_methods' => ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 
-    'allowed_origins' => ['*'],
+    'allowed_origins' => $allowedOrigins,
 
     'allowed_origins_patterns' => [],
 
-    'allowed_headers' => ['*'],
+    'allowed_headers' => ['Accept', 'Authorization', 'Content-Type', 'X-Requested-With', 'X-Funnel-Token'],
 
     'exposed_headers' => [],
 
-    'max_age' => 0,
+    'max_age' => 3600,
 
     'supports_credentials' => false,
 
