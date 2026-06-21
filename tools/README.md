@@ -54,6 +54,27 @@ it into a price sync or CI check.
 - **Max ad spend / sale** — the most you can pay per sale in ads and still hit margin (a negative value means the product is underpriced no matter what you do on ads).
 - **Monthly impact** — with `units`, the extra profit per month you'd capture by applying the suggested prices.
 
+## Using it on a Shopify / Sellvia store
+
+Sellvia stores run on Shopify, so you don't have to build a CSV by hand:
+
+1. In Shopify admin go to **Products → Export → All products (CSV for Excel/Numbers/...)**.
+2. Run the export straight through the tool. It auto-detects Shopify's
+   `Title`, `Variant Price`, and `Cost per item` columns. Shopify exports do
+   not include your ad cost or shipping, so pass those as catalog-wide numbers:
+
+   ```bash
+   php tools/price-floor.php --csv=products_export.csv --shipping=3.50 --ad=6.00 --margin=20 --out=fixed.csv
+   ```
+
+3. Open `fixed.csv`, copy the `suggested_price` values back into Shopify (or
+   into a Shopify price-update import). Underpriced products are sorted to the
+   top so you fix the worst leaks first.
+
+> Make sure **Cost per item** is filled in on your Shopify products
+> (Admin → Product → Pricing → Cost per item). Without it the tool assumes a
+> cost of 0 and the floor will be too low.
+
 ## Inside the Laravel app
 
 The same logic is exposed as an Artisan command and a reusable service

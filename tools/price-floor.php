@@ -51,7 +51,13 @@ $defaults = [
 $money = fn ($v) => $v === null ? '   n/a' : number_format((float) $v, 2);
 
 if (isset($options['csv'])) {
-    exit(runCsv($guard, $options['csv'], $defaults, $money, $options['out'] ?? null, $format));
+    $fallbacks = [
+        'shipping' => $options['shipping'] ?? null,
+        'ad' => $options['ad'] ?? null,
+        'extra' => $options['extra'] ?? null,
+        'units' => $options['units'] ?? null,
+    ];
+    exit(runCsv($guard, $options['csv'], $defaults, $fallbacks, $money, $options['out'] ?? null, $format));
 }
 
 // Single-product mode.
@@ -118,7 +124,7 @@ exit(0);
  * Process a CSV catalog: flag underpriced products, optionally write a
  * corrected catalog, and report the total monthly dollar impact.
  */
-function runCsv(PricingGuard $guard, string $path, array $defaults, callable $money, ?string $out, string $format): int
+function runCsv(PricingGuard $guard, string $path, array $defaults, array $fallbacks, callable $money, ?string $out, string $format): int
 {
     if (!is_file($path) || !is_readable($path)) {
         fwrite(STDERR, "CSV file not found or unreadable: {$path}\n");
@@ -136,6 +142,33 @@ function runCsv(PricingGuard $guard, string $path, array $defaults, callable $mo
 
     $columns = array_map(fn ($h) => strtolower(trim((string) $h)), $header);
 
+    // Resolve our canonical fields to a column index, accepting common aliases
+    // (including Shopify product-export headers) so a native CSV and a raw
+    // store export both work without any reformatting.
+    $aliases = [
+        'name' => ['name', 'title', 'product', 'handle'],
+        'cost' => ['cost', 'cost per item', 'cost_per_item', 'item cost', 'unit cost'],
+        'price' => ['price', 'variant price', 'selling price', 'sell price'],
+        'shipping' => ['shipping', 'shipping cost', 'ship cost'],
+        'ad' => ['ad', 'ad cost', 'ad_cost', 'cpa'],
+        'units' => ['units', 'units sold', 'monthly units', 'qty sold', 'sold'],
+        'extra' => ['extra', 'other cost'],
+        'margin' => ['margin', 'target margin'],
+        'fee_percent' => ['fee_percent', 'fee percent'],
+        'fee_fixed' => ['fee_fixed', 'fee fixed'],
+    ];
+
+    $index = [];
+    foreach ($aliases as $canonical => $names) {
+        foreach ($names as $alias) {
+            $pos = array_search($alias, $columns, true);
+            if ($pos !== false) {
+                $index[$canonical] = $pos;
+                break;
+            }
+        }
+    }
+
     $rows = [];
     $leaks = 0;
     $monthlyGain = 0.0;
@@ -145,28 +178,37 @@ function runCsv(PricingGuard $guard, string $path, array $defaults, callable $mo
             continue;
         }
 
-        $record = [];
-        foreach ($columns as $i => $name) {
-            $record[$name] = $line[$i] ?? null;
+        $val = function (string $field) use ($index, $line) {
+            if (!isset($index[$field])) {
+                return null;
+            }
+            $value = $line[$index[$field]] ?? null;
+
+            return ($value === null || $value === '') ? null : $value;
+        };
+
+        // Skip Shopify variant rows that carry no price (e.g. image-only rows).
+        if (isset($index['price']) && $val('price') === null && $val('cost') === null) {
+            continue;
         }
 
         $input = array_merge($defaults, [
-            'cost' => $record['cost'] ?? 0,
-            'shipping' => $record['shipping'] ?? 0,
-            'ad' => $record['ad'] ?? 0,
-            'extra' => $record['extra'] ?? 0,
-            'price' => $record['price'] ?? null,
-            'units' => $record['units'] ?? null,
+            'cost' => $val('cost') ?? 0,
+            'shipping' => $val('shipping') ?? $fallbacks['shipping'] ?? 0,
+            'ad' => $val('ad') ?? $fallbacks['ad'] ?? 0,
+            'extra' => $val('extra') ?? $fallbacks['extra'] ?? 0,
+            'price' => $val('price'),
+            'units' => $val('units') ?? $fallbacks['units'],
         ]);
 
         foreach (['fee_percent', 'fee_fixed', 'margin'] as $override) {
-            if (isset($record[$override]) && $record[$override] !== '') {
-                $input[$override] = $record[$override];
+            if ($val($override) !== null) {
+                $input[$override] = $val($override);
             }
         }
 
         $result = $guard->analyze($input);
-        $result['name'] = (string) ($record['name'] ?? ('row ' . (count($rows) + 1)));
+        $result['name'] = (string) ($val('name') ?? ('row ' . (count($rows) + 1)));
         $result['status'] = statusFor($result);
 
         if ($result['status'] !== 'OK' && $result['status'] !== 'no price set') {
@@ -273,6 +315,10 @@ Single product:
 
 CSV catalog (header: name,cost,shipping,ad,price[,units]):
   php tools/price-floor.php --csv=tools/sample-products.csv --margin=20
+
+Shopify export works directly (Title / Variant Price / Cost per item are
+auto-detected); supply ad and shipping as flags since exports omit them:
+  php tools/price-floor.php --csv=products_export.csv --shipping=3.50 --ad=6 --out=fixed.csv
 
 Write a corrected catalog to re-import to your store:
   php tools/price-floor.php --csv=tools/sample-products.csv --out=fixed.csv
