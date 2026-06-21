@@ -7,11 +7,10 @@ namespace App\Funnel\Attribution;
 /**
  * Zero-infrastructure attribution store: persists rows to a JSON file with
  * atomic writes, so both the webhook controllers and `bin/funnel report` can
- * read/write attribution without a database. Swap for the Eloquent-backed
- * funnel_attribution table (see the migration) in production by implementing
- * the same small surface.
+ * read/write attribution without a database. For production webhooks prefer
+ * {@see EloquentAttributionStore}, which is concurrency-safe.
  */
-final class JsonAttributionStore
+final class JsonAttributionStore implements AttributionStore
 {
     public function __construct(private readonly string $path)
     {
@@ -55,6 +54,15 @@ final class JsonAttributionStore
         return array_values(array_filter(
             $this->all(),
             static fn (Attribution $a): bool => $a->leadId === $leadId
+        ));
+    }
+
+    /** @return Attribution[] */
+    public function recordedSince(int $since): array
+    {
+        return array_values(array_filter(
+            $this->all(),
+            static fn (Attribution $a): bool => $a->createdAt >= $since
         ));
     }
 

@@ -11,7 +11,7 @@ namespace App\Funnel\Attribution;
  */
 final class AttributionReport
 {
-    public function __construct(private readonly JsonAttributionStore $store)
+    public function __construct(private readonly AttributionStore $store)
     {
     }
 
@@ -30,10 +30,7 @@ final class AttributionReport
         $funnel = ['leads' => 0, 'revenue_cents' => 0];
         $other = ['leads' => 0, 'revenue_cents' => 0];
 
-        foreach ($this->store->all() as $row) {
-            if ($row->createdAt < $since) {
-                continue;
-            }
+        foreach ($this->store->recordedSince($since) as $row) {
             $bucket = $row->isFunnel() ? 'funnel' : 'other';
             ${$bucket}['leads']++;
             ${$bucket}['revenue_cents'] += $row->revenueCents ?? 0;

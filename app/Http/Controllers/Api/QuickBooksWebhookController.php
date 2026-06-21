@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Funnel\Attribution\AttributionRecorder;
-use App\Funnel\Attribution\JsonAttributionStore;
+use App\Funnel\Attribution\AttributionStore;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,13 +19,9 @@ use Illuminate\Http\Request;
  */
 final class QuickBooksWebhookController extends Controller
 {
-    public function __invoke(Request $request): JsonResponse
+    public function __invoke(Request $request, AttributionStore $store): JsonResponse
     {
-        $recorder = new AttributionRecorder(
-            new JsonAttributionStore(base_path('storage/funnel/attribution.json'))
-        );
-
-        $updated = $recorder->recordPaidInvoice($request->all());
+        $updated = (new AttributionRecorder($store))->recordPaidInvoice($request->all());
 
         return response()->json([
             'updated_rows' => $updated,

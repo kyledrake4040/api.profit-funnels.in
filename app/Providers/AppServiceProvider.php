@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Funnel\Attribution\AttributionStore;
+use App\Funnel\Attribution\EloquentAttributionStore;
+use App\Funnel\Attribution\JsonAttributionStore;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 
@@ -16,6 +19,14 @@ class AppServiceProvider extends ServiceProvider
     {
         //
 		Schema::defaultStringLength(191);
+
+        $this->app->bind(AttributionStore::class, function (): AttributionStore {
+            if (config('funnel.attribution_driver') === 'eloquent') {
+                return new EloquentAttributionStore();
+            }
+
+            return new JsonAttributionStore(base_path('storage/funnel/attribution.json'));
+        });
     }
 
     /**
