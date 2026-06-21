@@ -77,14 +77,38 @@ final class ApiPublisher implements PlatformPublisher
             return PublishResult::fail($this->platform, 'request failed: ' . $e->getMessage());
         }
 
-        if ($response['status'] >= 200 && $response['status'] < 300) {
-            $decoded = json_decode($response['body'], true);
-            $ref = is_array($decoded) ? (string) ($decoded['id'] ?? $decoded['post_id'] ?? 'ok') : 'ok';
+        $status = $response['status'];
+        $body = $response['body'];
+        $snippet = substr($body, 0, 200);
+
+        // Rate limited: surface explicitly so the scheduler can back off/retry.
+        if ($status === 429) {
+            return PublishResult::fail($this->platform, 'HTTP 429 rate limited: ' . $snippet);
+        }
+
+        // Server-side error: transient, worth retrying.
+        if ($status >= 500) {
+            return PublishResult::fail($this->platform, 'HTTP ' . $status . ' server error: ' . $snippet);
+        }
+
+        if ($status >= 200 && $status < 300) {
+            $decoded = json_decode($body, true);
+            $ref = is_array($decoded) ? (string) ($decoded['id'] ?? $decoded['post_id'] ?? '') : '';
+
+            // A 2xx with no post id means the platform did not actually accept
+            // the post — treat it as a failure rather than silently "ok".
+            if ($ref === '') {
+                return PublishResult::fail(
+                    $this->platform,
+                    'HTTP ' . $status . ' but response contained no post id: ' . $snippet
+                );
+            }
 
             return PublishResult::ok($this->platform, $ref);
         }
 
-        return PublishResult::fail($this->platform, 'HTTP ' . $response['status'] . ': ' . substr($response['body'], 0, 200));
+        // Any other non-2xx (4xx client errors, etc.).
+        return PublishResult::fail($this->platform, 'HTTP ' . $status . ': ' . $snippet);
     }
 
     /**
