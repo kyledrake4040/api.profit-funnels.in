@@ -20,3 +20,8 @@ Route::get('/', function () {
 Auth::routes();
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+
+// Funnel attribution dashboard (login required — shows leads & revenue).
+Route::get('/funnel/dashboard', \App\Http\Controllers\FunnelDashboardController::class)
+    ->middleware('auth')
+    ->name('funnel.dashboard');
