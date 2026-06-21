@@ -1,0 +1,267 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Profit Funnel engine — command line.
+ *
+ *   php bin/funnel plan [count]   Plan an alternating content calendar
+ *   php bin/funnel schedule [days] Plan a full cadence: socials/day + GBP/day
+ *   php bin/funnel build          Render everything queued (videos + GBP cards)
+ *   php bin/funnel run            Publish any due posts (dry-run until connected)
+ *   php bin/funnel book           Show the free-quote CTA (checkout if enabled)
+ *   php bin/funnel report --days=7 Leads & revenue split by funnel vs. other
+ *   php bin/funnel demo [count]   Do all of the above end-to-end
+ *
+ * Runs with zero setup in dry-run mode. Add credentials (social + Stripe) to
+ * go live — see FUNNEL.md.
+ */
+
+require __DIR__ . '/../vendor/autoload.php';
+
+use App\Funnel\Content\BeforeAfterCard;
+use App\Funnel\Content\ContentPlanner;
+use App\Funnel\Content\VideoBuilder;
+use App\Funnel\FunnelConfig;
+use App\Funnel\Attribution\AttributionReport;
+use App\Funnel\Attribution\JsonAttributionStore;
+use App\Funnel\Payments\FakePaymentGateway;
+use App\Funnel\Payments\StripePaymentGateway;
+use App\Funnel\Publishing\ApiPublisher;
+use App\Funnel\Publishing\DryRunPublisher;
+use App\Funnel\Scheduler;
+use App\Funnel\Storage\JsonVideoStore;
+
+$root = dirname(__DIR__);
+$storeDir = $root . '/storage/funnel';
+$config = FunnelConfig::fromEnv();
+$store = new JsonVideoStore($storeDir . '/queue.json');
+
+$command = $argv[1] ?? 'demo';
+$arg = isset($argv[2]) ? (int) $argv[2] : null;
+
+function line(string $s = ''): void
+{
+    echo $s . PHP_EOL;
+}
+
+/** Parse a --days=N flag (default 7) from the CLI args. */
+function daysArg(array $argv, int $default = 7): int
+{
+    foreach ($argv as $a) {
+        if (preg_match('/^--days=(\d+)$/', $a, $m)) {
+            return max(1, (int) $m[1]);
+        }
+    }
+
+    return $default;
+}
+
+function publishers(FunnelConfig $config): array
+{
+    $list = [];
+    // Social platforms (via GHL) plus Google Business Profile.
+    foreach (array_merge($config->platforms, ['gbp']) as $platform) {
+        $api = ApiPublisher::fromEnv($platform);
+        $list[] = $api->isConnected() ? $api : new DryRunPublisher($platform);
+    }
+
+    return $list;
+}
+
+function renderPost(VideoBuilder $videoBuilder, BeforeAfterCard $card, FunnelConfig $config, string $storeDir, $post): string
+{
+    if ($post->type === \App\Funnel\VideoPost::TYPE_BEFORE_AFTER) {
+        $dir = $storeDir . '/output/' . $post->id;
+        if (! is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+        // Use real photos if present: storage/funnel/photos/<id>/before.* + after.*
+        $photoDir = $storeDir . '/photos/' . $post->id;
+        $before = current(glob($photoDir . '/before.*') ?: []) ?: null;
+        $after = current(glob($photoDir . '/after.*') ?: []) ?: null;
+        $out = $dir . '/before_after.png';
+        $card->render($before ?: null, $after ?: null, $config->businessName, $out);
+
+        return ($before && $after) ? 'before/after card (real photos)' : 'before/after card (PLACEHOLDER — add real photos)';
+    }
+
+    $m = $videoBuilder->build($post);
+
+    return $m['mp4'] ? basename($m['mp4']) : "{$m['cards']} frames + player.html";
+}
+
+function doPlan(JsonVideoStore $store, ContentPlanner $planner, int $count): array
+{
+    $posts = $planner->plan($count, time());
+    foreach ($posts as $post) {
+        $store->save($post);
+    }
+
+    return $posts;
+}
+
+// Feature flag: the engine stays dormant until explicitly switched on, so it
+// can be merged to main and deployed safely, then activated when ready by
+// setting FUNNEL_ENABLED=true. While disabled it exits cleanly (zero side
+// effects, nothing posted, no charges).
+if (! filter_var(getenv('FUNNEL_ENABLED') ?: 'false', FILTER_VALIDATE_BOOL)) {
+    line('Profit Funnel is disabled. Set FUNNEL_ENABLED=true to activate.');
+    exit(0);
+}
+
+$planner = new ContentPlanner($config);
+
+switch ($command) {
+    case 'plan':
+        $posts = doPlan($store, $planner, $arg ?? 6);
+        line("Planned " . count($posts) . " posts for {$config->businessName}:");
+        line();
+        foreach ($posts as $i => $post) {
+            $tag = $post->type === 'business' ? '🏠 BUSINESS (value)' : '🔥 VIRAL';
+            line(sprintf("  %d. [%s] %s", $i + 1, $tag, $post->title));
+            line("     hook: {$post->hook}");
+            line("     " . implode(' ', $post->hashtags));
+            line();
+        }
+        line("Saved to storage/funnel/queue.json");
+        break;
+
+    case 'schedule':
+        $days = $arg ?? 1;
+        $now = time();
+        $socials = $planner->planForDays($days, $config->socialsPerDay, $now);
+        $gbp = $planner->planBeforeAfter($days, $config->gbpPerDay, $now);
+        foreach (array_merge($socials, $gbp) as $post) {
+            $store->save($post);
+        }
+        $platformCount = max(1, count($config->platforms));
+        line("Scheduled {$days} day(s):");
+        line("  • Socials (" . implode(', ', $config->platforms) . "): {$config->socialsPerDay}/day each, half viral / half business");
+        line("  • Google Business Profile: {$config->gbpPerDay}/day before & after");
+        line("  Total content pieces queued: " . count($socials) . " social + " . count($gbp) . " GBP");
+        if (ContentPlanner::isAggressiveCadence($config->socialsPerDay)) {
+            line();
+            line("⚠️  {$config->socialsPerDay} posts/day per platform is well above what the");
+            line("    algorithms reward (1–4/day) and risks spam flags / shadowbans /");
+            line("    account suspension. Fewer, better videos win. Set a safer cadence with");
+            line("    FUNNEL_POSTS_PER_DAY. YouTube's API also can't sustain this volume.");
+        }
+        line();
+        line("Next: php bin/funnel build   (renders everything queued)");
+        break;
+
+    case 'build':
+        $builder = new VideoBuilder($storeDir . '/output');
+        $card = new BeforeAfterCard();
+        $pending = $store->all();
+        if ($pending === []) {
+            $pending = doPlan($store, $planner, $arg ?? 6);
+        }
+        line("Building " . count($pending) . " pieces...");
+        line();
+        foreach ($pending as $post) {
+            $what = renderPost($builder, $card, $config, $storeDir, $post);
+            line("  ✅ {$post->title}");
+            line("     → {$what}");
+        }
+        line();
+        line("Videos: open player.html. GBP: before_after.png. Frames are Canva-ready.");
+        break;
+
+    case 'run':
+        $scheduler = new Scheduler($store, publishers($config));
+        $report = $scheduler->run(time());
+        if ($report === []) {
+            line("No posts are due right now.");
+            break;
+        }
+        foreach ($report as $postId => $results) {
+            line("📤 {$postId}");
+            foreach ($results as $platform => $result) {
+                $icon = $result->success ? '✅' : '❌';
+                line("   {$icon} {$platform}: {$result->message}");
+            }
+        }
+        break;
+
+    case 'book':
+    case 'checkout':
+        $offer = $config->offer();
+        if ($config->chargeUpfront && $config->stripeSecret) {
+            // Optional: charge a deposit up front (off by default).
+            $gateway = new StripePaymentGateway($config->stripeSecret);
+            $link = $gateway->createCheckout(
+                $offer->name,
+                $offer->fromPriceCents,
+                $config->currency,
+                $config->checkoutSuccessUrl,
+                $config->checkoutCancelUrl
+            );
+            line("💳 Deposit checkout [" . ($link->live ? 'LIVE' : 'TEST') . "]");
+            line("   {$offer->name} — {$offer->priceLabel()}");
+            line("   {$link->url}");
+            break;
+        }
+        // Default: free quote, no upfront charge.
+        line("📅 Free quote (no payment today)");
+        line("   {$offer->name} — jobs {$offer->priceLabel()}");
+        line("   You only pay once the work is done.");
+        line("   Book: {$offer->bookingUrl}");
+        break;
+
+    case 'report':
+        $days = daysArg($argv);
+        $attribution = new JsonAttributionStore($storeDir . '/attribution.json');
+        echo (new AttributionReport($attribution))->render($days);
+        break;
+
+    case 'demo':
+    default:
+        $count = $arg ?? 6;
+        line(str_repeat('=', 60));
+        line("  PROFIT FUNNEL — {$config->businessName} ({$config->location})");
+        line(str_repeat('=', 60));
+        line();
+        line("STEP 1 — Plan {$count} posts (every 2nd = your business, value-first)");
+        $posts = doPlan($store, $planner, $count);
+        foreach ($posts as $i => $post) {
+            $tag = $post->type === 'business' ? '🏠' : '🔥';
+            line(sprintf("   %d. %s %s", $i + 1, $tag, $post->title));
+        }
+        line();
+
+        line("STEP 2 — Build the videos");
+        $builder = new VideoBuilder($storeDir . '/output');
+        foreach ($posts as $post) {
+            $m = $builder->build($post);
+            $what = $m['mp4'] ? basename($m['mp4']) : "{$m['cards']} frames + player.html";
+            line("   ✅ {$post->title} → {$what}");
+        }
+        line();
+
+        line("STEP 3 — Publish due posts");
+        $report = (new Scheduler($store, publishers($config)))->run(time());
+        foreach ($report as $postId => $results) {
+            foreach ($results as $platform => $result) {
+                line("   " . ($result->success ? '✅' : '❌') . " {$platform}: {$result->message}");
+            }
+        }
+        line();
+
+        line("STEP 4 — The conversion step (link in your bio / pinned comment)");
+        $offer = $config->offer();
+        if ($config->chargeUpfront && $config->stripeSecret) {
+            $link = (new StripePaymentGateway($config->stripeSecret))
+                ->createCheckout($offer->name, $offer->fromPriceCents, $config->currency, $config->checkoutSuccessUrl, $config->checkoutCancelUrl);
+            line("   💳 {$offer->name} (deposit): {$link->url}");
+        } else {
+            line("   📅 {$offer->cta()}");
+        }
+        line();
+        line(str_repeat('-', 60));
+        line("Videos: storage/funnel/output/<post>/player.html");
+        line("To go live: connect socials (+ optional Stripe) — see FUNNEL.md");
+        break;
+}
