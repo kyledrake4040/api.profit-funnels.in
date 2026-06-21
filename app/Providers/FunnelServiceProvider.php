@@ -7,6 +7,7 @@ namespace App\Providers;
 use App\Funnel\Attribution\AttributionStore;
 use App\Funnel\Attribution\EloquentAttributionStore;
 use App\Funnel\Attribution\JsonAttributionStore;
+use App\Funnel\FunnelConfig;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -19,6 +20,9 @@ final class FunnelServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        // The engine config is read once from the environment per process.
+        $this->app->singleton(FunnelConfig::class, static fn (): FunnelConfig => FunnelConfig::fromEnv());
+
         $this->app->bind(AttributionStore::class, function (): AttributionStore {
             if (config('funnel.attribution_driver') === 'eloquent') {
                 return new EloquentAttributionStore();

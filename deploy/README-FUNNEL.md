@@ -10,8 +10,10 @@ nothing is charged, and `storage/funnel/run.log` stays empty until you set
 
 ## What runs
 
-`bin/funnel run` publishes any **due** posts. Run it every ~5 minutes; its
-output is appended to `storage/funnel/run.log` for the weekly monitoring cron.
+Laravel's scheduler (`routes/console.php`) runs **`php artisan funnel:run`** every
+5 minutes — it publishes any **due** posts and appends output to
+`storage/funnel/run.log` — plus a weekly `funnel:report`. You drive the scheduler
+one of two ways below. (`bin/funnel` remains for manual, framework-free use.)
 
 ## Configuration
 
@@ -32,19 +34,21 @@ cd /var/www/api.profit-funnels.in
 composer install --no-dev
 
 # edit APP_DIR at the top of deploy/funnel.crontab if your path differs
-crontab deploy/funnel.crontab
+crontab deploy/funnel.crontab   # one line: * * * * * php artisan schedule:run
 
 # queue a few days of content once
 FUNNEL_ENABLED=true php bin/funnel schedule 3
 FUNNEL_ENABLED=true php bin/funnel build
 ```
 
-`*/5` cron then drains the queue into `storage/funnel/run.log`.
+The single `schedule:run` cron drives Laravel's scheduler, which drains the
+queue into `storage/funnel/run.log` every 5 minutes.
 
 ## Option B — Railway / Fly / any Docker host
 
-`deploy/Dockerfile` + `deploy/run-loop.sh` build a container whose only job is
-the 5-minute publish loop (`deploy/railway.json` points Railway at it).
+`deploy/Dockerfile` runs `php artisan schedule:work` in the foreground (the
+scheduler fires `funnel:run` every 5 minutes); `deploy/railway.json` points
+Railway at it.
 
 ```bash
 docker build -f deploy/Dockerfile -t funnel .
