@@ -29,7 +29,7 @@ full list). At minimum to go live:
 ```bash
 git clone <repo> /var/www/api.profit-funnels.in
 cd /var/www/api.profit-funnels.in
-composer install --no-dev --ignore-platform-reqs --no-scripts
+composer install --no-dev
 
 # edit APP_DIR at the top of deploy/funnel.crontab if your path differs
 crontab deploy/funnel.crontab
