@@ -21,3 +21,11 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 Route::group(['prefix' => 'auth'], function () {
     Route::post("login", [\App\Http\Controllers\Api\AuthController::class, 'login'])->name('auth.login');
 });
+
+// Funnel attribution webhooks (no auth: verified by the provider's shared secret).
+Route::group(['prefix' => 'funnel/webhooks'], function () {
+    Route::post('gohighlevel', \App\Http\Controllers\Api\GoHighLevelWebhookController::class)
+        ->name('funnel.webhooks.gohighlevel');
+    Route::post('quickbooks', \App\Http\Controllers\Api\QuickBooksWebhookController::class)
+        ->name('funnel.webhooks.quickbooks');
+});
