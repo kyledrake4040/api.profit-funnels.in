@@ -1,6 +1,6 @@
-name,cost,shipping,ad,price
-Wireless Earbuds,12.50,3.20,6.00,24.99
-Phone Case,2.10,1.50,4.00,9.99
-LED Strip Lights,7.80,4.00,8.50,19.99
-Posture Corrector,5.40,2.80,7.00,14.50
-Smart Water Bottle,9.20,5.10,9.00,29.99
+name,cost,shipping,ad,price,units
+Wireless Earbuds,12.50,3.20,6.00,24.99,140
+Phone Case,2.10,1.50,4.00,9.99,300
+LED Strip Lights,7.80,4.00,8.50,19.99,90
+Posture Corrector,5.40,2.80,7.00,14.50,60
+Smart Water Bottle,9.20,5.10,9.00,29.99,75

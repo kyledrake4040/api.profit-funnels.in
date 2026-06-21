@@ -4,16 +4,22 @@
  * Standalone price-floor calculator.
  *
  * Tells you the minimum safe selling price for a product so you never lose
- * money on a sale, accounting for supplier cost, shipping, ad cost per sale,
- * payment-processing fees, and a target profit margin.
+ * money on a sale, recommends a ready-to-use price, caps your ad spend, and can
+ * rewrite a whole catalog with corrected prices.
  *
  * Runs with plain PHP — no Composer/Laravel required:
  *
  *   Single product:
- *     php tools/price-floor.php --cost=10 --shipping=4 --ad=5 --margin=20 --price=24.99
+ *     php tools/price-floor.php --cost=10 --shipping=4 --ad=5 --margin=20 --price=24.99 --units=120
  *
- *   A whole catalog from a CSV (columns: name,cost,shipping,ad,price):
+ *   Scan a catalog (columns: name,cost,shipping,ad,price[,units]):
  *     php tools/price-floor.php --csv=tools/sample-products.csv --margin=20
+ *
+ *   Write a corrected catalog you can re-import to your store:
+ *     php tools/price-floor.php --csv=tools/sample-products.csv --out=fixed.csv
+ *
+ *   JSON instead of a table:
+ *     php tools/price-floor.php --csv=tools/sample-products.csv --format=json
  *
  * Defaults: --fee-percent=2.9  --fee-fixed=0.30  --margin=20
  */
@@ -23,9 +29,9 @@ require __DIR__ . '/../app/Services/PricingGuard.php';
 use App\Services\PricingGuard;
 
 $options = getopt('', [
-    'cost::', 'shipping::', 'ad::', 'extra::',
+    'cost::', 'shipping::', 'ad::', 'extra::', 'units::',
     'fee-percent::', 'fee-fixed::', 'margin::', 'price::',
-    'csv::', 'help',
+    'csv::', 'out::', 'format::', 'help',
 ]);
 
 if (isset($options['help'])) {
@@ -34,6 +40,7 @@ if (isset($options['help'])) {
 }
 
 $guard = new PricingGuard();
+$format = $options['format'] ?? 'text';
 
 $defaults = [
     'fee_percent' => $options['fee-percent'] ?? 2.9,
@@ -44,7 +51,7 @@ $defaults = [
 $money = fn ($v) => $v === null ? '   n/a' : number_format((float) $v, 2);
 
 if (isset($options['csv'])) {
-    exit(runCsv($guard, $options['csv'], $defaults, $money));
+    exit(runCsv($guard, $options['csv'], $defaults, $money, $options['out'] ?? null, $format));
 }
 
 // Single-product mode.
@@ -54,7 +61,13 @@ $result = $guard->analyze(array_merge($defaults, [
     'ad' => $options['ad'] ?? 0,
     'extra' => $options['extra'] ?? 0,
     'price' => $options['price'] ?? null,
+    'units' => $options['units'] ?? null,
 ]));
+
+if ($format === 'json') {
+    fwrite(STDOUT, json_encode($result, JSON_PRETTY_PRINT) . "\n");
+    exit(isset($result['below_floor']) && $result['below_floor'] ? 1 : 0);
+}
 
 if (!$result['feasible']) {
     fwrite(STDERR, "Target margin plus fees exceed 100% — no price can hit that margin.\n"
@@ -63,38 +76,49 @@ if (!$result['feasible']) {
 }
 
 fwrite(STDOUT, "\nPrice-floor report\n");
-fwrite(STDOUT, str_repeat('-', 48) . "\n");
-fwrite(STDOUT, sprintf("Total cost per sale : %s\n", $money($result['fixed_costs'])));
-fwrite(STDOUT, sprintf("Break-even price    : %s\n", $money($result['break_even_price'])));
-fwrite(STDOUT, sprintf("Floor price (%2d%%)   : %s\n", (int) $result['target_margin_percent'], $money($result['floor_price'])));
+fwrite(STDOUT, str_repeat('-', 52) . "\n");
+fwrite(STDOUT, sprintf("Total cost per sale  : %s\n", $money($result['fixed_costs'])));
+fwrite(STDOUT, sprintf("Break-even price     : %s\n", $money($result['break_even_price'])));
+fwrite(STDOUT, sprintf("Floor price (%2d%%)    : %s\n", (int) $result['target_margin_percent'], $money($result['floor_price'])));
+fwrite(STDOUT, sprintf("Suggested price      : %s  (nets %s/sale)\n", $money($result['suggested_price']), $money($result['net_at_suggested'])));
 
 if (isset($result['current_price'])) {
-    fwrite(STDOUT, str_repeat('-', 48) . "\n");
-    fwrite(STDOUT, sprintf("Current price       : %s\n", $money($result['current_price'])));
-    fwrite(STDOUT, sprintf("Net profit / sale   : %s (%s%% margin)\n",
+    fwrite(STDOUT, str_repeat('-', 52) . "\n");
+    fwrite(STDOUT, sprintf("Current price        : %s\n", $money($result['current_price'])));
+    fwrite(STDOUT, sprintf("Net profit / sale    : %s (%s%% margin)\n",
         $money($result['net_profit']), $money($result['net_margin_percent'])));
+    fwrite(STDOUT, sprintf("Max ad spend / sale  : %s  (your CPA must stay under this)\n", $money($result['max_ad_spend'])));
+
+    if (isset($result['monthly_net_current'])) {
+        fwrite(STDOUT, sprintf("Monthly net (now)    : %s over %d sales\n",
+            $money($result['monthly_net_current']), (int) $result['units']));
+        if (isset($result['monthly_gain'])) {
+            fwrite(STDOUT, sprintf("Monthly gain if fixed: %s\n", $money($result['monthly_gain'])));
+        }
+    }
 
     if ($result['losing_money']) {
-        fwrite(STDOUT, sprintf("LEAK: losing %s on every sale. Raise price to at least %s.\n",
-            $money(abs($result['net_profit'])), $money($result['floor_price'])));
+        fwrite(STDOUT, sprintf("\nLEAK: losing %s on every sale. Reprice to %s.\n",
+            $money(abs($result['net_profit'])), $money($result['suggested_price'])));
         exit(1);
     }
 
     if ($result['below_floor']) {
-        fwrite(STDOUT, sprintf("UNDER FLOOR: %s below target. Raise price to at least %s.\n",
-            $money($result['shortfall']), $money($result['floor_price'])));
+        fwrite(STDOUT, sprintf("\nUNDER FLOOR: %s below target. Reprice to %s.\n",
+            $money($result['shortfall']), $money($result['suggested_price'])));
         exit(1);
     }
 
-    fwrite(STDOUT, "OK: price is at or above the floor.\n");
+    fwrite(STDOUT, "\nOK: price is at or above the floor.\n");
 }
 
 exit(0);
 
 /**
- * Process a CSV catalog and flag every product priced below its floor.
+ * Process a CSV catalog: flag underpriced products, optionally write a
+ * corrected catalog, and report the total monthly dollar impact.
  */
-function runCsv(PricingGuard $guard, string $path, array $defaults, callable $money): int
+function runCsv(PricingGuard $guard, string $path, array $defaults, callable $money, ?string $out, string $format): int
 {
     if (!is_file($path) || !is_readable($path)) {
         fwrite(STDERR, "CSV file not found or unreadable: {$path}\n");
@@ -112,20 +136,18 @@ function runCsv(PricingGuard $guard, string $path, array $defaults, callable $mo
 
     $columns = array_map(fn ($h) => strtolower(trim((string) $h)), $header);
 
-    fwrite(STDOUT, sprintf("\n%-24s %10s %10s %10s  %s\n", 'Product', 'Price', 'Floor', 'Net', 'Status'));
-    fwrite(STDOUT, str_repeat('-', 70) . "\n");
-
+    $rows = [];
     $leaks = 0;
-    $total = 0;
+    $monthlyGain = 0.0;
 
-    while (($row = fgetcsv($handle)) !== false) {
-        if ($row === [null] || count(array_filter($row, fn ($c) => $c !== null && $c !== '')) === 0) {
+    while (($line = fgetcsv($handle)) !== false) {
+        if ($line === [null] || count(array_filter($line, fn ($c) => $c !== null && $c !== '')) === 0) {
             continue;
         }
 
         $record = [];
         foreach ($columns as $i => $name) {
-            $record[$name] = $row[$i] ?? null;
+            $record[$name] = $line[$i] ?? null;
         }
 
         $input = array_merge($defaults, [
@@ -134,9 +156,9 @@ function runCsv(PricingGuard $guard, string $path, array $defaults, callable $mo
             'ad' => $record['ad'] ?? 0,
             'extra' => $record['extra'] ?? 0,
             'price' => $record['price'] ?? null,
+            'units' => $record['units'] ?? null,
         ]);
 
-        // Allow per-row overrides of fee/margin when those columns exist.
         foreach (['fee_percent', 'fee_fixed', 'margin'] as $override) {
             if (isset($record[$override]) && $record[$override] !== '') {
                 $input[$override] = $record[$override];
@@ -144,67 +166,130 @@ function runCsv(PricingGuard $guard, string $path, array $defaults, callable $mo
         }
 
         $result = $guard->analyze($input);
-        $total++;
+        $result['name'] = (string) ($record['name'] ?? ('row ' . (count($rows) + 1)));
+        $result['status'] = statusFor($result);
 
-        $name = (string) ($record['name'] ?? ('row ' . $total));
-        $netDisplay = isset($result['net_profit']) ? $money($result['net_profit']) : '   n/a';
-        $status = 'OK';
-
-        if (!$result['feasible']) {
-            $status = 'INFEASIBLE MARGIN';
+        if ($result['status'] !== 'OK' && $result['status'] !== 'no price set') {
             $leaks++;
-        } elseif (isset($result['current_price'])) {
-            if ($result['losing_money']) {
-                $status = 'LEAK (losing money)';
-                $leaks++;
-            } elseif ($result['below_floor']) {
-                $status = 'UNDER FLOOR';
-                $leaks++;
-            }
-        } else {
-            $status = 'no price set';
+        }
+        if (isset($result['monthly_gain'])) {
+            $monthlyGain += $result['monthly_gain'];
         }
 
-        fwrite(STDOUT, sprintf(
-            "%-24s %10s %10s %10s  %s\n",
-            mb_strimwidth($name, 0, 24),
-            isset($result['current_price']) ? $money($result['current_price']) : '   n/a',
-            $money($result['floor_price']),
-            $netDisplay,
-            $status
-        ));
+        $rows[] = $result;
     }
 
     fclose($handle);
 
-    fwrite(STDOUT, str_repeat('-', 70) . "\n");
-    fwrite(STDOUT, sprintf("%d product(s) checked, %d need a price change.\n", $total, $leaks));
+    // Worst leaks first.
+    usort($rows, fn ($a, $b) => ($a['net_profit'] ?? INF) <=> ($b['net_profit'] ?? INF));
+
+    if ($out !== null) {
+        writeFixedCsv($out, $rows);
+        fwrite(STDOUT, sprintf("Wrote corrected catalog to %s (suggested_price column added).\n", $out));
+    }
+
+    if ($format === 'json') {
+        fwrite(STDOUT, json_encode($rows, JSON_PRETTY_PRINT) . "\n");
+        return $leaks > 0 ? 1 : 0;
+    }
+
+    fwrite(STDOUT, sprintf("\n%-22s %9s %9s %9s %9s  %s\n", 'Product', 'Price', 'Floor', 'Suggest', 'Net', 'Status'));
+    fwrite(STDOUT, str_repeat('-', 78) . "\n");
+
+    foreach ($rows as $r) {
+        fwrite(STDOUT, sprintf(
+            "%-22s %9s %9s %9s %9s  %s\n",
+            mb_strimwidth($r['name'], 0, 22),
+            isset($r['current_price']) ? $money($r['current_price']) : '   n/a',
+            $money($r['floor_price']),
+            $money($r['suggested_price'] ?? null),
+            isset($r['net_profit']) ? $money($r['net_profit']) : '   n/a',
+            $r['status']
+        ));
+    }
+
+    fwrite(STDOUT, str_repeat('-', 78) . "\n");
+    fwrite(STDOUT, sprintf("%d product(s) checked, %d need a price change.\n", count($rows), $leaks));
+
+    if (abs($monthlyGain) > 0.0) {
+        fwrite(STDOUT, sprintf("Estimated extra profit per month if you apply the suggested prices: %s\n", $money($monthlyGain)));
+    }
 
     return $leaks > 0 ? 1 : 0;
+}
+
+/**
+ * Classify a product's pricing health.
+ */
+function statusFor(array $result): string
+{
+    if (!$result['feasible']) {
+        return 'INFEASIBLE MARGIN';
+    }
+    if (!isset($result['current_price'])) {
+        return 'no price set';
+    }
+    if ($result['losing_money']) {
+        return 'LEAK (losing money)';
+    }
+    if ($result['below_floor']) {
+        return 'UNDER FLOOR';
+    }
+
+    return 'OK';
+}
+
+/**
+ * Write a corrected catalog with a suggested_price column.
+ */
+function writeFixedCsv(string $path, array $rows): void
+{
+    $handle = fopen($path, 'w');
+    fputcsv($handle, ['name', 'current_price', 'floor_price', 'suggested_price', 'net_at_suggested', 'status']);
+
+    foreach ($rows as $r) {
+        fputcsv($handle, [
+            $r['name'],
+            $r['current_price'] ?? '',
+            $r['floor_price'] ?? '',
+            $r['suggested_price'] ?? '',
+            $r['net_at_suggested'] ?? '',
+            $r['status'],
+        ]);
+    }
+
+    fclose($handle);
 }
 
 function helpText(): string
 {
     return <<<TXT
 
-Price-floor calculator — find the minimum safe selling price.
+Price-floor calculator — find the minimum safe selling price and a recommended price.
 
 Single product:
-  php tools/price-floor.php --cost=10 --shipping=4 --ad=5 --margin=20 --price=24.99
+  php tools/price-floor.php --cost=10 --shipping=4 --ad=5 --margin=20 --price=24.99 --units=120
 
-CSV catalog (header: name,cost,shipping,ad,price):
+CSV catalog (header: name,cost,shipping,ad,price[,units]):
   php tools/price-floor.php --csv=tools/sample-products.csv --margin=20
+
+Write a corrected catalog to re-import to your store:
+  php tools/price-floor.php --csv=tools/sample-products.csv --out=fixed.csv
 
 Options:
   --cost          Supplier/product cost per unit
   --shipping      Shipping cost per order
   --ad            Ad cost per sale (your CPA)
   --extra         Any other per-order cost
+  --units         Units sold per month (for dollar-impact projections)
   --fee-percent   Payment processing percentage fee (default 2.9)
   --fee-fixed     Payment processing fixed fee (default 0.30)
   --margin        Target net profit margin percent (default 20)
   --price         Current selling price to evaluate (optional)
   --csv           Path to a CSV catalog instead of single-product flags
+  --out           Write a corrected catalog (with suggested_price) to this path
+  --format        text (default) or json
   --help          Show this help
 
 Exit code is 1 when any product is priced below its floor, so this can gate a

@@ -4,9 +4,9 @@ namespace App\Services;
 
 /**
  * PricingGuard computes the minimum safe selling price for a product so that a
- * sale never loses money. It accounts for supplier cost, shipping, ad cost per
- * sale (CPA), payment-processing fees (percentage + fixed), and a target net
- * profit margin.
+ * sale never loses money, and recommends a ready-to-use price. It accounts for
+ * supplier cost, shipping, ad cost per sale (CPA), payment-processing fees
+ * (percentage + fixed), and a target net profit margin.
  *
  * The price floor is derived from:
  *
@@ -25,7 +25,8 @@ class PricingGuard
      * Analyze a single product's economics.
      *
      * Accepted input keys: cost, shipping, ad, extra, fee_percent, fee_fixed,
-     * margin (target %), and optionally price (current selling price).
+     * margin (target %), and optionally price (current selling price) and units
+     * (units sold per month, for dollar-impact projections).
      *
      * @param  array  $input
      *
@@ -56,7 +57,16 @@ class PricingGuard
             'feasible' => $floor !== null,
         ];
 
-        if (isset($input['price']) && $input['price'] !== null && $input['price'] !== '') {
+        // A ready-to-use recommended price: the floor rounded up to a .99 charm price.
+        if ($floor !== null) {
+            $suggested = $this->suggestedPrice($floor);
+            $result['suggested_price'] = $suggested;
+            $result['net_at_suggested'] = round($this->netProfit($suggested, $fixedCosts, $feeFixed, $f), 2);
+        }
+
+        $hasPrice = isset($input['price']) && $input['price'] !== null && $input['price'] !== '';
+
+        if ($hasPrice) {
             $price = $this->toFloat($input['price']);
             $net = $this->netProfit($price, $fixedCosts, $feeFixed, $f);
 
@@ -66,6 +76,28 @@ class PricingGuard
             $result['below_floor'] = $floor !== null && $price < $floor;
             $result['losing_money'] = $net < 0;
             $result['shortfall'] = ($floor !== null && $price < $floor) ? round($floor - $price, 2) : 0.0;
+
+            // The most you can afford to pay per sale in ads at this price and
+            // still hit the target margin. Negative means even free ads miss it.
+            $result['max_ad_spend'] = round($price * (1 - $f - $m) - $feeFixed - ($fixedCosts - $ad), 2);
+        }
+
+        // Dollar impact when monthly units are supplied.
+        if (isset($input['units']) && $input['units'] !== null && $input['units'] !== '') {
+            $units = $this->toFloat($input['units']);
+            $result['units'] = $units;
+
+            if ($hasPrice) {
+                $result['monthly_net_current'] = round($result['net_profit'] * $units, 2);
+            }
+
+            if (isset($result['net_at_suggested'])) {
+                $result['monthly_net_at_suggested'] = round($result['net_at_suggested'] * $units, 2);
+            }
+
+            if ($hasPrice && isset($result['net_at_suggested'])) {
+                $result['monthly_gain'] = round(($result['net_at_suggested'] - $result['net_profit']) * $units, 2);
+            }
         }
 
         return $result;
@@ -110,6 +142,24 @@ class PricingGuard
         $fee = $price * $f + $feeFixed;
 
         return $price - $fixedCosts - $fee;
+    }
+
+    /**
+     * Round a floor price up to the next ".99" charm price at or above it.
+     *
+     * @param  float  $floor
+     *
+     * @return float
+     */
+    private function suggestedPrice(float $floor): float
+    {
+        $candidate = ceil($floor) - 0.01;
+
+        if ($candidate < $floor - 1e-9) {
+            $candidate = ceil($floor) + 0.99;
+        }
+
+        return round($candidate, 2);
     }
 
     /**

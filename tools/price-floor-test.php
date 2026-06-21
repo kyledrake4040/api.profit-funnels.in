@@ -59,6 +59,23 @@ assertTrue($r['losing_money'] === false, '24.99 still nets a profit');
 approx($r['net_profit'], 4.97, 'net profit at 24.99');
 approx($r['shortfall'], 0.04, 'shortfall vs floor');
 
+// Superpowers: suggested price, max ad spend, and monthly dollar impact.
+assertTrue($r['suggested_price'] >= $r['floor_price'], 'suggested price is at or above the floor');
+approx($r['suggested_price'], 25.99, 'suggested charm price (25.03 floor -> 25.99)');
+assertTrue($r['net_at_suggested'] > $r['net_profit'], 'suggested price nets more than current');
+
+$units = $guard->analyze([
+    'cost' => 10, 'shipping' => 4, 'ad' => 5,
+    'fee_percent' => 2.9, 'fee_fixed' => 0.30, 'margin' => 20,
+    'price' => 24.99, 'units' => 100,
+]);
+approx($units['monthly_net_current'], 497.00, 'monthly net at current price x100 units');
+assertTrue($units['monthly_gain'] > 0, 'repricing yields a positive monthly gain');
+
+// Max ad spend: at price 24.99, cost+shipping 14, fee 2.9%+0.30, margin 20%.
+// 24.99*(1-0.029-0.20) - 0.30 - 14 = 24.99*0.771 - 0.30 - 14 = 19.27 - 14.30 = 4.97
+approx($r['max_ad_spend'], 4.97, 'max affordable ad spend per sale');
+
 // A clearly money-losing price.
 $loss = $guard->analyze([
     'cost' => 12.50, 'shipping' => 3.20, 'ad' => 6.00,
