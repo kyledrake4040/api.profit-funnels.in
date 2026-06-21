@@ -28,7 +28,8 @@ class AuthRequest extends FormRequest
         //dd(\Request::route()->getName());
         //dd(\Route::current()->getName());
         return [
-            'password' => 'required|string|min:8|max:20'
+            'email' => 'required|email',
+            'password' => 'required|string',
         ];
     }
 
