@@ -28,6 +28,7 @@ class AuthRequest extends FormRequest
         //dd(\Request::route()->getName());
         //dd(\Route::current()->getName());
         return [
+            'email' => 'required|email',
             'password' => 'required|string|min:8|max:20'
         ];
     }
@@ -53,7 +54,10 @@ class AuthRequest extends FormRequest
      */
     public function attributes()
     {
-        return ['password' => __('Password')];
+        return [
+            'email' => __('Email'),
+            'password' => __('Password')
+        ];
     }
 
     /**
