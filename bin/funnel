@@ -11,6 +11,7 @@ declare(strict_types=1);
  *   php bin/funnel build          Render everything queued (videos + GBP cards)
  *   php bin/funnel run            Publish any due posts (dry-run until connected)
  *   php bin/funnel book           Show the free-quote CTA (checkout if enabled)
+ *   php bin/funnel report --days=7 Leads & revenue split by funnel vs. other
  *   php bin/funnel demo [count]   Do all of the above end-to-end
  *
  * Runs with zero setup in dry-run mode. Add credentials (social + Stripe) to
@@ -23,6 +24,8 @@ use App\Funnel\Content\BeforeAfterCard;
 use App\Funnel\Content\ContentPlanner;
 use App\Funnel\Content\VideoBuilder;
 use App\Funnel\FunnelConfig;
+use App\Funnel\Attribution\AttributionReport;
+use App\Funnel\Attribution\JsonAttributionStore;
 use App\Funnel\Payments\FakePaymentGateway;
 use App\Funnel\Payments\StripePaymentGateway;
 use App\Funnel\Publishing\ApiPublisher;
@@ -41,6 +44,18 @@ $arg = isset($argv[2]) ? (int) $argv[2] : null;
 function line(string $s = ''): void
 {
     echo $s . PHP_EOL;
+}
+
+/** Parse a --days=N flag (default 7) from the CLI args. */
+function daysArg(array $argv, int $default = 7): int
+{
+    foreach ($argv as $a) {
+        if (preg_match('/^--days=(\d+)$/', $a, $m)) {
+            return max(1, (int) $m[1]);
+        }
+    }
+
+    return $default;
 }
 
 function publishers(FunnelConfig $config): array
@@ -185,6 +200,12 @@ switch ($command) {
         line("   {$offer->name} — jobs {$offer->priceLabel()}");
         line("   You only pay once the work is done.");
         line("   Book: {$offer->bookingUrl}");
+        break;
+
+    case 'report':
+        $days = daysArg($argv);
+        $attribution = new JsonAttributionStore($storeDir . '/attribution.json');
+        echo (new AttributionReport($attribution))->render($days);
         break;
 
     case 'demo':
