@@ -25,7 +25,7 @@ final class AttributionRecorder
 
     /** @param callable():int|null $clock injectable for tests */
     public function __construct(
-        private readonly JsonAttributionStore $store,
+        private readonly AttributionStore $store,
         ?callable $clock = null,
     ) {
         $this->clock = $clock ?? static fn (): int => time();

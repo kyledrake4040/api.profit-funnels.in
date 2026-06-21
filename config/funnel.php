@@ -15,4 +15,17 @@ return [
 
     'webhook_secret' => env('FUNNEL_WEBHOOK_SECRET', ''),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Attribution store driver
+    |--------------------------------------------------------------------------
+    |
+    | "eloquent" persists attribution to the funnel_attribution table
+    | (concurrency-safe; recommended in production). "json" uses a flat file
+    | (zero-infra; fine for local/dry-run and the CLI).
+    |
+    */
+
+    'attribution_driver' => env('FUNNEL_ATTRIBUTION_DRIVER', 'json'),
+
 ];

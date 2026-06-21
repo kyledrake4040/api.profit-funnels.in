@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Funnel\Attribution\AttributionReport;
-use App\Funnel\Attribution\JsonAttributionStore;
+use App\Funnel\Attribution\AttributionStore;
 use Illuminate\Http\Request;
 
 /**
@@ -15,11 +15,10 @@ use Illuminate\Http\Request;
  */
 final class FunnelDashboardController extends Controller
 {
-    public function __invoke(Request $request)
+    public function __invoke(Request $request, AttributionStore $store)
     {
         $days = max(1, min(365, (int) $request->query('days', '7')));
 
-        $store = new JsonAttributionStore(base_path('storage/funnel/attribution.json'));
         $summary = (new AttributionReport($store))->summarize($days);
 
         if ($request->query('format') === 'json') {
