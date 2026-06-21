@@ -102,6 +102,15 @@ function doPlan(JsonVideoStore $store, ContentPlanner $planner, int $count): arr
     return $posts;
 }
 
+// Feature flag: the engine stays dormant until explicitly switched on, so it
+// can be merged to main and deployed safely, then activated when ready by
+// setting FUNNEL_ENABLED=true. While disabled it exits cleanly (zero side
+// effects, nothing posted, no charges).
+if (! filter_var(getenv('FUNNEL_ENABLED') ?: 'false', FILTER_VALIDATE_BOOL)) {
+    line('Profit Funnel is disabled. Set FUNNEL_ENABLED=true to activate.');
+    exit(0);
+}
+
 $planner = new ContentPlanner($config);
 
 switch ($command) {
