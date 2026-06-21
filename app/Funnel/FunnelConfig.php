@@ -64,15 +64,15 @@ final class FunnelConfig
             services: $services,
             contactEmail: $contactEmail,
             platforms: $platforms,
-            socialsPerDay: max(1, (int) $env('FUNNEL_POSTS_PER_DAY', '3')),
-            gbpPerDay: max(1, (int) $env('FUNNEL_GBP_POSTS_PER_DAY', '3')),
+            socialsPerDay: self::requirePositiveInt('FUNNEL_POSTS_PER_DAY', $env('FUNNEL_POSTS_PER_DAY', '3')),
+            gbpPerDay: self::requirePositiveInt('FUNNEL_GBP_POSTS_PER_DAY', $env('FUNNEL_GBP_POSTS_PER_DAY', '3')),
             offerName: (string) $env('FUNNEL_OFFER_NAME', 'Free Quote — Soft Wash + Power Wash'),
             offerDescription: (string) $env(
                 'FUNNEL_OFFER_DESC',
                 'a light chemical wash that kills mildew and lifts dirt, then a power wash and rinse'
             ),
             sizeNote: (string) $env('FUNNEL_SIZE_NOTE', 'depending on the size of your home'),
-            fromPriceCents: (int) $env('FUNNEL_FROM_PRICE_CENTS', '69900'),
+            fromPriceCents: self::requirePositiveInt('FUNNEL_FROM_PRICE_CENTS', $env('FUNNEL_FROM_PRICE_CENTS', '69900')),
             currency: (string) $env('FUNNEL_CURRENCY', 'cad'),
             bookingUrl: (string) $env(
                 'FUNNEL_BOOKING_URL',
@@ -83,6 +83,23 @@ final class FunnelConfig
             checkoutSuccessUrl: (string) $env('FUNNEL_SUCCESS_URL', 'https://example.com/thanks'),
             checkoutCancelUrl: (string) $env('FUNNEL_CANCEL_URL', 'https://example.com/'),
         );
+    }
+
+    /**
+     * Validate that a configuration value is a positive integer, failing fast
+     * with a clear message on boot instead of silently clamping or coercing a
+     * bad value (e.g. "abc", "0" or "-5") into something unexpected.
+     */
+    private static function requirePositiveInt(string $key, ?string $raw): int
+    {
+        $value = (string) $raw;
+        if (! ctype_digit($value) || (int) $value < 1) {
+            throw new \RuntimeException(
+                "Invalid {$key}: expected a positive integer, got \"{$value}\"."
+            );
+        }
+
+        return (int) $value;
     }
 
     public function offer(): BookingOffer
