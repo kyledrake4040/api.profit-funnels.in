@@ -28,4 +28,16 @@ return [
 
     'attribution_driver' => env('FUNNEL_ATTRIBUTION_DRIVER', 'json'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | JSON store path
+    |--------------------------------------------------------------------------
+    |
+    | Where the "json" attribution driver persists rows. Defaults to
+    | storage/funnel/attribution.json; overridable so tests can isolate it.
+    |
+    */
+
+    'json_store_path' => env('FUNNEL_JSON_STORE_PATH'),
+
 ];
