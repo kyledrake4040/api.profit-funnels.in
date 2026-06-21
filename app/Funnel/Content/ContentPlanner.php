@@ -148,11 +148,15 @@ final class ContentPlanner
      * posting window, for $days days. Same content stream alternates
      * business/viral. (The scheduler posts each to every configured platform.)
      *
+     * The requested cadence is clamped to {@see safeCadence()} so a misconfigured
+     * high value (e.g. 50/day) can never actually queue spam-level volume — the
+     * planner refuses to schedule past the safe ceiling.
+     *
      * @return VideoPost[]
      */
     public function planForDays(int $days, int $perDay, int $startAt): array
     {
-        $perDay = max(1, $perDay);
+        $perDay = self::safeCadence($perDay);
         $windowSeconds = (self::WINDOW_END_HOUR - self::WINDOW_START_HOUR) * 3600;
         $spacing = $perDay > 1 ? intdiv($windowSeconds, $perDay - 1) : 0;
         $dayStart = $startAt - ($startAt % 86400) + (self::WINDOW_START_HOUR * 3600);
@@ -174,6 +178,16 @@ final class ContentPlanner
     public static function isAggressiveCadence(int $perDay): bool
     {
         return $perDay > self::SAFE_MAX_PER_DAY;
+    }
+
+    /**
+     * Clamp a requested posts/day to the safe range [1, SAFE_MAX_PER_DAY]. This
+     * is the hard ceiling the planner enforces, regardless of how high the
+     * configured cadence is, to protect accounts from spam flags and bans.
+     */
+    public static function safeCadence(int $perDay): int
+    {
+        return min(max(1, $perDay), self::SAFE_MAX_PER_DAY);
     }
 
     /**

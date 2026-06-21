@@ -1,0 +1,31 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  phpunit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      # The legacy Laravel lockfile pins PHP 7 packages, while the Funnel
+      # engine uses readonly properties (PHP 8.1+). We install with the
+      # platform check relaxed and skip the post-install artisan scripts so
+      # the autoloader is built without booting the old framework.
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --ignore-platform-reqs --no-scripts
+
+      # Only the Unit suite is framework-free and runs on PHP 8.4. The Feature
+      # suite boots the legacy app and is excluded until the framework is
+      # upgraded.
+      - name: Run PHPUnit (Unit)
+        run: vendor/bin/phpunit --testsuite Unit
