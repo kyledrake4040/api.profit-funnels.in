@@ -14,18 +14,14 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: '8.3'
+          extensions: mbstring, pdo_sqlite, sqlite3, intl, bcmath
           coverage: none
 
-      # The legacy Laravel lockfile pins PHP 7 packages, while the Funnel
-      # engine uses readonly properties (PHP 8.1+). We install with the
-      # platform check relaxed and skip the post-install artisan scripts so
-      # the autoloader is built without booting the old framework.
       - name: Install dependencies
-        run: composer install --no-interaction --no-progress --ignore-platform-reqs --no-scripts
+        run: composer install --no-interaction --no-progress --prefer-dist
 
-      # Only the Unit suite is framework-free and runs on PHP 8.4. The Feature
-      # suite boots the legacy app and is excluded until the framework is
-      # upgraded.
-      - name: Run PHPUnit (Unit)
-        run: vendor/bin/phpunit --testsuite Unit
+      # Full suite: framework-free Unit tests + Feature tests that boot the app
+      # (Laravel 10) and drive the HTTP stack, including the funnel webhooks.
+      - name: Run PHPUnit
+        run: vendor/bin/phpunit
