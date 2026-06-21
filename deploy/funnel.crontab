@@ -1,0 +1,15 @@
+# Profit Funnel — droplet crontab.
+#
+# Install with:  crontab deploy/funnel.crontab
+# (edit APP_DIR to your checkout path first). Requires FUNNEL_ENABLED=true in
+# the environment, otherwise every invocation exits cleanly as a no-op.
+#
+# m h dom mon dow  command
+
+APP_DIR=/var/www/api.profit-funnels.in
+
+# Publish any due posts every 5 minutes -> run.log (what the monitor reads).
+*/5 * * * *  cd $APP_DIR && FUNNEL_ENABLED=true php bin/funnel run >> storage/funnel/run.log 2>&1
+
+# Weekly attribution report (Mondays 08:00) -> report.log.
+0 8 * * 1   cd $APP_DIR && FUNNEL_ENABLED=true php bin/funnel report --days=7 >> storage/funnel/report.log 2>&1
