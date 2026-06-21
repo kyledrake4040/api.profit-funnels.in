@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SyncPaymentToHubSpot;
 use App\Models\Payment;
-use App\Services\HubSpotClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -176,10 +176,10 @@ class StripeWebhookController extends Controller
             'amount' => $payment->formatted_amount,
         ]);
 
-        // Push the order into HubSpot as a contact + deal so fulfillment
-        // and follow-up happen in the CRM. Failures are handled internally
-        // and never block the webhook response.
-        app(HubSpotClient::class)->syncPayment($payment);
+        // Push the order into HubSpot off the request thread, so a slow or
+        // failing CRM call never delays the webhook ack (and triggers Stripe
+        // retries). Runs inline only when QUEUE_CONNECTION=sync.
+        SyncPaymentToHubSpot::dispatch($payment);
     }
 
     /**
