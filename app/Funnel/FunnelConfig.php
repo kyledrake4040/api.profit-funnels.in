@@ -64,7 +64,7 @@ final class FunnelConfig
             services: $services,
             contactEmail: $contactEmail,
             platforms: $platforms,
-            socialsPerDay: max(1, (int) $env('FUNNEL_POSTS_PER_DAY', '3')),
+            socialsPerDay: max(1, (int) $env('FUNNEL_POSTS_PER_DAY', '2')),
             gbpPerDay: max(1, (int) $env('FUNNEL_GBP_POSTS_PER_DAY', '3')),
             offerName: (string) $env('FUNNEL_OFFER_NAME', 'Free Quote — Soft Wash + Power Wash'),
             offerDescription: (string) $env(
