@@ -26,8 +26,12 @@ Route::group(['prefix' => 'auth'], function () {
 Route::post('stripe/webhook', [\App\Http\Controllers\Api\StripeWebhookController::class, 'handle'])
     ->name('stripe.webhook');
 
-// Funnel attribution webhooks (no auth: verified by the provider's shared secret).
-Route::group(['prefix' => 'funnel/webhooks'], function () {
+// Funnel attribution webhooks — verified by a shared secret (X-Funnel-Token
+// header or ?token=), enforced when FUNNEL_WEBHOOK_SECRET is configured.
+Route::group([
+    'prefix' => 'funnel/webhooks',
+    'middleware' => \App\Http\Middleware\VerifyFunnelWebhookSecret::class,
+], function () {
     Route::post('gohighlevel', \App\Http\Controllers\Api\GoHighLevelWebhookController::class)
         ->name('funnel.webhooks.gohighlevel');
     Route::post('quickbooks', \App\Http\Controllers\Api\QuickBooksWebhookController::class)
