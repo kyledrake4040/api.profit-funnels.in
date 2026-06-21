@@ -76,10 +76,11 @@ final class SchedulerTest extends TestCase
         $store = new JsonVideoStore($this->path);
         $store->save($this->post('a', 100, ['tiktok', 'instagram']));
 
+        // No-op sleeper so the retry backoff doesn't slow the test down.
         $report = (new Scheduler($store, [
             $this->publisher('tiktok', true),
             $this->publisher('instagram', false),
-        ]))->run(500);
+        ], 3, static fn (int $s): null => null))->run(500);
 
         self::assertTrue($report['a']['tiktok']->success);
         self::assertFalse($report['a']['instagram']->success);
