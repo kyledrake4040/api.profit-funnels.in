@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
         $this->call(CountrySeeder::class);
         $this->call(CurrencySeeder::class);
         $this->call(UserSeeder::class);
+        $this->call(PlanSeeder::class);
         Schema::enableForeignKeyConstraints();
     }
 }
