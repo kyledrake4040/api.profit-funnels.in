@@ -33,12 +33,12 @@ class AuthLoginTest extends TestCase
     public function test_login_rejects_invalid_credentials(): void
     {
         User::factory()->create([
-            'email' => 'owner@example.com',
+            'email'    => 'owner@example.com',
             'password' => Hash::make('correct-horse'),
         ]);
 
         $this->postJson('/api/auth/login', [
-            'email' => 'owner@example.com',
+            'email'    => 'owner@example.com',
             'password' => 'wrong-password',
         ])->assertStatus(401)->assertJson(['success' => false]);
     }
@@ -46,23 +46,21 @@ class AuthLoginTest extends TestCase
     public function test_login_issues_an_access_token_for_valid_credentials(): void
     {
         $user = User::factory()->create([
-            'email' => 'owner@example.com',
+            'email'    => 'owner@example.com',
             'password' => Hash::make('correct-horse'),
         ]);
 
         $response = $this->postJson('/api/auth/login', [
-            'email' => 'owner@example.com',
+            'email'    => 'owner@example.com',
             'password' => 'correct-horse',
         ]);
 
         $response->assertOk()
-            ->assertJson([
-                'success' => true,
-                'token_type' => 'Bearer',
-                'user' => ['id' => $user->id, 'email' => 'owner@example.com'],
-            ])
-            ->assertJsonStructure(['access_token']);
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.token_type', 'Bearer')
+            ->assertJsonPath('data.user.id', $user->id)
+            ->assertJsonPath('data.user.email', 'owner@example.com');
 
-        $this->assertNotEmpty($response->json('access_token'));
+        $this->assertNotEmpty($response->json('data.access_token'));
     }
 }
