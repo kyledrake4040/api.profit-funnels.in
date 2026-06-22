@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 final class Plan extends Model
 {
@@ -37,5 +38,16 @@ final class Plan extends Model
     public function isActive(): bool
     {
         return $this->status === config('custom.plan.status_active');
+    }
+
+    /**
+     * The end of one billing period from the given start, based on the plan's
+     * interval (yearly plans add a year; everything else a month).
+     */
+    public function periodEndFrom(Carbon $start): Carbon
+    {
+        return $this->interval === config('custom.plan.interval_yearly')
+            ? $start->copy()->addYear()
+            : $start->copy()->addMonth();
     }
 }

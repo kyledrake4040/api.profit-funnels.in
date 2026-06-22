@@ -2,15 +2,21 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Funnel\Payments\SubscriptionProvisioner;
 use App\Http\Controllers\Controller;
 use App\Jobs\SyncPaymentToHubSpot;
 use App\Models\Payment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class StripeWebhookController extends Controller
 {
+    public function __construct(private readonly SubscriptionProvisioner $provisioner)
+    {
+    }
+
     /**
      * Receive and process Stripe webhook events.
      *
@@ -146,6 +152,21 @@ class StripeWebhookController extends Controller
             'amount' => $payment->formatted_amount,
             'email' => $payment->customer_email,
         ]);
+
+        // Stand up the customer's account + subscription the moment their first
+        // payment clears. Best-effort: a provisioning hiccup must never fail the
+        // webhook (which would trigger Stripe retries) — the Payment row above is
+        // the durable record to reconcile from. The provisioner is idempotent.
+        if ($event['type'] === 'checkout.session.completed') {
+            try {
+                $this->provisioner->provisionFromSession($object);
+            } catch (Throwable $e) {
+                Log::error('Subscription provisioning failed.', [
+                    'payment_id' => $payment->id,
+                    'error'      => $e->getMessage(),
+                ]);
+            }
+        }
 
         // Fan out on the events that matter for fulfillment.
         switch ($event['type']) {

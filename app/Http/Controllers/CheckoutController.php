@@ -34,6 +34,10 @@ final class CheckoutController extends Controller
             'month',
             route('checkout.success'),
             route('landing') . '#pricing',
+            // Carry the plan slug through Stripe so the webhook can provision the
+            // customer's account + subscription once payment completes. Config
+            // keys use underscores ("done_for_you"); plan slugs use hyphens.
+            ['plan' => str_replace('_', '-', $plan)],
         );
 
         return redirect()->away($link->url);

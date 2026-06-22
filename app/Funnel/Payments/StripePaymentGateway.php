@@ -37,11 +37,16 @@ final class StripePaymentGateway implements PaymentGateway
     /**
      * Recurring (monthly/yearly) Checkout Session — used to sell the service
      * subscription plans. $interval is a Stripe interval, e.g. "month".
+     *
+     * @param array<string,string|int> $metadata copied onto the session (and the
+     *                                            resulting subscription) so the
+     *                                            webhook can map the payment back
+     *                                            to a plan/user.
      */
-    public function createSubscriptionCheckout(string $productName, int $amountCents, string $currency, string $interval, string $successUrl, string $cancelUrl): CheckoutLink
+    public function createSubscriptionCheckout(string $productName, int $amountCents, string $currency, string $interval, string $successUrl, string $cancelUrl, array $metadata = []): CheckoutLink
     {
         return $this->request(
-            $this->buildSubscriptionFields($productName, $amountCents, $currency, $interval, $successUrl, $cancelUrl),
+            $this->buildSubscriptionFields($productName, $amountCents, $currency, $interval, $successUrl, $cancelUrl, $metadata),
             $amountCents,
             $currency,
         );
@@ -95,11 +100,12 @@ final class StripePaymentGateway implements PaymentGateway
      * Stripe params for a recurring subscription Checkout Session (inline
      * price_data so no pre-created Price is needed).
      *
+     * @param array<string,string|int> $metadata
      * @return array<string,string>
      */
-    public function buildSubscriptionFields(string $productName, int $amountCents, string $currency, string $interval, string $successUrl, string $cancelUrl): array
+    public function buildSubscriptionFields(string $productName, int $amountCents, string $currency, string $interval, string $successUrl, string $cancelUrl, array $metadata = []): array
     {
-        return [
+        $fields = [
             'mode' => 'subscription',
             'success_url' => $successUrl,
             'cancel_url' => $cancelUrl,
@@ -109,6 +115,16 @@ final class StripePaymentGateway implements PaymentGateway
             'line_items[0][price_data][recurring][interval]' => $interval,
             'line_items[0][price_data][product_data][name]' => $productName,
         ];
+
+        // Stamp metadata on both the session (delivered with
+        // checkout.session.completed) and the subscription it creates (delivered
+        // with later invoice.* events) so fulfillment can resolve it either way.
+        foreach ($metadata as $key => $value) {
+            $fields["metadata[{$key}]"] = (string) $value;
+            $fields["subscription_data[metadata][{$key}]"] = (string) $value;
+        }
+
+        return $fields;
     }
 
     /**
