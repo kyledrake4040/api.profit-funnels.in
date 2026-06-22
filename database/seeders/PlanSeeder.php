@@ -17,7 +17,7 @@ final class PlanSeeder extends Seeder
                 'slug'        => 'starter',
                 'description' => 'Attribution dashboard for one business.',
                 'price'       => 99.00,
-                'currency'    => 'USD',
+                'currency'    => 'CAD',
                 'interval'    => 'Monthly',
                 'features'    => json_encode([
                     'Attribution dashboard',
@@ -32,7 +32,7 @@ final class PlanSeeder extends Seeder
                 'slug'        => 'pro',
                 'description' => 'Everything in Starter plus automated content scheduling.',
                 'price'       => 249.00,
-                'currency'    => 'USD',
+                'currency'    => 'CAD',
                 'interval'    => 'Monthly',
                 'features'    => json_encode([
                     'Everything in Starter',
@@ -47,7 +47,7 @@ final class PlanSeeder extends Seeder
                 'slug'        => 'done-for-you',
                 'description' => 'We run the full attribution engine end to end.',
                 'price'       => 499.00,
-                'currency'    => 'USD',
+                'currency'    => 'CAD',
                 'interval'    => 'Monthly',
                 'features'    => json_encode([
                     'Everything in Pro',
