@@ -55,7 +55,7 @@ final class SubscriptionController extends Controller
             'gateway'           => $request->input('gateway'),
             'gateway_reference' => $request->input('gateway_reference'),
             'starts_at'         => $startsAt,
-            'ends_at'           => $this->periodEnd($startsAt, $plan->interval),
+            'ends_at'           => $plan->periodEndFrom($startsAt),
         ]);
 
         return $this->successResponse(
@@ -82,14 +82,5 @@ final class SubscriptionController extends Controller
         $model->save();
 
         return $this->successResponse($model, __('Subscription cancelled.'));
-    }
-
-    private function periodEnd(Carbon $start, ?string $interval): Carbon
-    {
-        if ($interval === config('custom.plan.interval_yearly')) {
-            return $start->copy()->addYear();
-        }
-
-        return $start->copy()->addMonth();
     }
 }

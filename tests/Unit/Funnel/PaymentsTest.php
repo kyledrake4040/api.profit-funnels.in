@@ -83,4 +83,21 @@ final class PaymentsTest extends TestCase
         self::assertSame('cs_sub_1', $link->id);
         self::assertSame(24900, $link->amountCents);
     }
+
+    public function test_stripe_subscription_metadata_is_stamped_on_session_and_subscription(): void
+    {
+        $fields = (new StripePaymentGateway('sk_test_abc'))
+            ->buildSubscriptionFields('ProfitProof Starter', 9900, 'usd', 'month', 'https://x/ok', 'https://x/no', ['plan' => 'starter']);
+
+        self::assertSame('starter', $fields['metadata[plan]']);
+        self::assertSame('starter', $fields['subscription_data[metadata][plan]']);
+    }
+
+    public function test_stripe_subscription_fields_omit_metadata_when_none_given(): void
+    {
+        $fields = (new StripePaymentGateway('sk_test_abc'))
+            ->buildSubscriptionFields('ProfitProof Starter', 9900, 'usd', 'month', 'https://x/ok', 'https://x/no');
+
+        self::assertArrayNotHasKey('metadata[plan]', $fields);
+    }
 }
