@@ -216,7 +216,7 @@
                     <li>Weekly revenue-by-channel report</li>
                     <li>1 business</li>
                 </ul>
-                <a href="#signup" class="btn btn-ghost">Start with Starter</a>
+                <a href="/checkout/starter" class="btn btn-ghost">Start with Starter</a>
             </div>
             <div class="tier feature">
                 <div class="name">Pro · most popular</div>
@@ -227,7 +227,7 @@
                     <li>Before/after &amp; GBP posting</li>
                     <li>Priority support</li>
                 </ul>
-                <a href="#signup" class="btn btn-primary">Get Pro</a>
+                <a href="/checkout/pro" class="btn btn-primary">Get Pro</a>
             </div>
             <div class="tier">
                 <div class="name">Done-for-you</div>
