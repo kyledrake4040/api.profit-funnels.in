@@ -1,11 +1,12 @@
 <?php
+
 return [
     'status_inactive' => 'Inactive',
     'status_active' => 'Active',
     'status' => [
         'Active',
         'Deleted',
-        'Inactive'
+        'Inactive',
     ],
     'user' => [
         'status_inactive' => 'Inactive',
@@ -23,6 +24,62 @@ return [
             'Super Admin',
             'Admin',
             'Customer',
+        ],
+    ],
+    'funnel' => [
+        'status_active' => 'Active',
+        'status_inactive' => 'Inactive',
+        'status_draft' => 'Draft',
+        'status' => [
+            'Active',
+            'Inactive',
+            'Draft',
+        ],
+    ],
+    'page' => [
+        'status_active' => 'Active',
+        'status_inactive' => 'Inactive',
+        'status_draft' => 'Draft',
+        'status' => [
+            'Active',
+            'Inactive',
+            'Draft',
+        ],
+        'type_landing' => 'Landing',
+        'types' => [
+            'Landing',
+            'Optin',
+            'Sales',
+            'Checkout',
+            'Upsell',
+            'Downsell',
+            'ThankYou',
+        ],
+    ],
+    'plan' => [
+        'status_active' => 'Active',
+        'status_inactive' => 'Inactive',
+        'status' => [
+            'Active',
+            'Inactive',
+        ],
+        'interval_monthly' => 'Monthly',
+        'interval_yearly' => 'Yearly',
+        'intervals' => [
+            'Monthly',
+            'Yearly',
+        ],
+    ],
+    'subscription' => [
+        'status_pending' => 'Pending',
+        'status_active' => 'Active',
+        'status_cancelled' => 'Cancelled',
+        'status_expired' => 'Expired',
+        'status' => [
+            'Pending',
+            'Active',
+            'Cancelled',
+            'Expired',
         ],
     ],
 ];
