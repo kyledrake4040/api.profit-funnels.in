@@ -13,9 +13,11 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+// Public sales site for the attribution service.
+Route::get('/', [\App\Http\Controllers\LandingController::class, 'show'])->name('landing');
+Route::post('/leads', [\App\Http\Controllers\LandingController::class, 'capture'])
+    ->middleware('throttle:10,1')
+    ->name('leads.capture');
 
 Auth::routes();
 
