@@ -69,4 +69,22 @@ return [
 
     'lead_forward_url' => env('FUNNEL_LEAD_FORWARD_URL'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Service plans (Stripe checkout)
+    |--------------------------------------------------------------------------
+    |
+    | Monthly price (in cents) for each ProfitProof plan the pricing buttons
+    | sell. Checkout uses Stripe subscription mode; requires STRIPE_SECRET.
+    |
+    */
+
+    'currency' => env('FUNNEL_SERVICE_CURRENCY', 'usd'),
+
+    'plans' => [
+        'starter' => 9900,
+        'pro' => 24900,
+        'done_for_you' => 49900,
+    ],
+
 ];

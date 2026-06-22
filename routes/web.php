@@ -19,6 +19,12 @@ Route::post('/leads', [\App\Http\Controllers\LandingController::class, 'capture'
     ->middleware('throttle:10,1')
     ->name('leads.capture');
 
+// Paid signup — pricing buttons start a Stripe subscription checkout.
+Route::get('/checkout-success', [\App\Http\Controllers\CheckoutController::class, 'success'])
+    ->name('checkout.success');
+Route::get('/checkout/{plan}', [\App\Http\Controllers\CheckoutController::class, 'start'])
+    ->name('checkout.start');
+
 Auth::routes();
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');

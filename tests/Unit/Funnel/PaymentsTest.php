@@ -58,4 +58,29 @@ final class PaymentsTest extends TestCase
         (new StripePaymentGateway('sk_test_bad', $transport))
             ->createCheckout('Quote', 4900, 'cad', 'https://x/ok', 'https://x/no');
     }
+
+    public function test_stripe_build_subscription_fields_are_well_formed(): void
+    {
+        $gateway = new StripePaymentGateway('sk_test_abc');
+        $fields = $gateway->buildSubscriptionFields('ProfitProof Pro', 24900, 'usd', 'month', 'https://x/ok', 'https://x/no');
+
+        self::assertSame('subscription', $fields['mode']);
+        self::assertSame('24900', $fields['line_items[0][price_data][unit_amount]']);
+        self::assertSame('month', $fields['line_items[0][price_data][recurring][interval]']);
+        self::assertSame('ProfitProof Pro', $fields['line_items[0][price_data][product_data][name]']);
+    }
+
+    public function test_stripe_create_subscription_checkout_parses_session_url(): void
+    {
+        $transport = static fn (string $url, array $fields, string $secret): array => [
+            'status' => 200,
+            'body' => json_encode(['id' => 'cs_sub_1', 'url' => 'https://checkout.stripe.com/c/pay/cs_sub_1']),
+        ];
+
+        $link = (new StripePaymentGateway('sk_test_abc', $transport))
+            ->createSubscriptionCheckout('ProfitProof Pro', 24900, 'usd', 'month', 'https://x/ok', 'https://x/no');
+
+        self::assertSame('cs_sub_1', $link->id);
+        self::assertSame(24900, $link->amountCents);
+    }
 }
