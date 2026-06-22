@@ -55,4 +55,18 @@ return [
 
     'queue_path' => env('FUNNEL_QUEUE_PATH'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Lead forward URL
+    |--------------------------------------------------------------------------
+    |
+    | Optional. When set, leads captured by the public sales site are also
+    | POSTed to this URL (e.g. a GoHighLevel inbound webhook) so they land in
+    | your CRM in addition to the attribution store. Failures never block the
+    | visitor's submission.
+    |
+    */
+
+    'lead_forward_url' => env('FUNNEL_LEAD_FORWARD_URL'),
+
 ];
