@@ -27,7 +27,33 @@ final class StripePaymentGateway implements PaymentGateway
 
     public function createCheckout(string $productName, int $amountCents, string $currency, string $successUrl, string $cancelUrl): CheckoutLink
     {
-        $fields = $this->buildFields($productName, $amountCents, $currency, $successUrl, $cancelUrl);
+        return $this->request(
+            $this->buildFields($productName, $amountCents, $currency, $successUrl, $cancelUrl),
+            $amountCents,
+            $currency,
+        );
+    }
+
+    /**
+     * Recurring (monthly/yearly) Checkout Session — used to sell the service
+     * subscription plans. $interval is a Stripe interval, e.g. "month".
+     */
+    public function createSubscriptionCheckout(string $productName, int $amountCents, string $currency, string $interval, string $successUrl, string $cancelUrl): CheckoutLink
+    {
+        return $this->request(
+            $this->buildSubscriptionFields($productName, $amountCents, $currency, $interval, $successUrl, $cancelUrl),
+            $amountCents,
+            $currency,
+        );
+    }
+
+    /**
+     * Create a Checkout Session from form-encoded params and parse the result.
+     *
+     * @param array<string,string> $fields
+     */
+    private function request(array $fields, int $amountCents, string $currency): CheckoutLink
+    {
         $response = $this->send('https://api.stripe.com/v1/checkout/sessions', $fields);
 
         $decoded = json_decode($response['body'], true);
@@ -61,6 +87,26 @@ final class StripePaymentGateway implements PaymentGateway
             'line_items[0][quantity]' => '1',
             'line_items[0][price_data][currency]' => $currency,
             'line_items[0][price_data][unit_amount]' => (string) $amountCents,
+            'line_items[0][price_data][product_data][name]' => $productName,
+        ];
+    }
+
+    /**
+     * Stripe params for a recurring subscription Checkout Session (inline
+     * price_data so no pre-created Price is needed).
+     *
+     * @return array<string,string>
+     */
+    public function buildSubscriptionFields(string $productName, int $amountCents, string $currency, string $interval, string $successUrl, string $cancelUrl): array
+    {
+        return [
+            'mode' => 'subscription',
+            'success_url' => $successUrl,
+            'cancel_url' => $cancelUrl,
+            'line_items[0][quantity]' => '1',
+            'line_items[0][price_data][currency]' => $currency,
+            'line_items[0][price_data][unit_amount]' => (string) $amountCents,
+            'line_items[0][price_data][recurring][interval]' => $interval,
             'line_items[0][price_data][product_data][name]' => $productName,
         ];
     }
