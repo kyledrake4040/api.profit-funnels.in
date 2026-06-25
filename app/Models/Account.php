@@ -47,6 +47,16 @@ final class Account extends Model
         return $this->hasMany(Contact::class);
     }
 
+    public function pipelines(): HasMany
+    {
+        return $this->hasMany(Pipeline::class);
+    }
+
+    public function opportunities(): HasMany
+    {
+        return $this->hasMany(Opportunity::class);
+    }
+
     public function isActive(): bool
     {
         return $this->status === config('custom.account.status_active');

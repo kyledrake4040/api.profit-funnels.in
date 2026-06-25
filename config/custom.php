@@ -60,6 +60,27 @@ return [
             'Inactive',
         ],
     ],
+    'opportunity' => [
+        'status_open' => 'Open',
+        'status_won' => 'Won',
+        'status_lost' => 'Lost',
+        'status' => [
+            'Open',
+            'Won',
+            'Lost',
+        ],
+    ],
+    'pipeline' => [
+        // Seeded when a pipeline is created without explicit stages.
+        'default_stages' => [
+            'New',
+            'Contacted',
+            'Qualified',
+            'Proposal',
+            'Won',
+            'Lost',
+        ],
+    ],
     'funnel' => [
         'status_active' => 'Active',
         'status_inactive' => 'Inactive',
