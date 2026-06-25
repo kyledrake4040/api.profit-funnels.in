@@ -50,6 +50,16 @@ return [
             'User',
         ],
     ],
+    'contact' => [
+        'status_lead' => 'Lead',
+        'status_customer' => 'Customer',
+        'status_inactive' => 'Inactive',
+        'status' => [
+            'Lead',
+            'Customer',
+            'Inactive',
+        ],
+    ],
     'funnel' => [
         'status_active' => 'Active',
         'status_inactive' => 'Inactive',
