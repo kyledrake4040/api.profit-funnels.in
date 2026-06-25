@@ -58,4 +58,35 @@ class User extends Authenticatable implements MustVerifyEmail
             ->withPivot('role')
             ->withTimestamps();
     }
+
+    public function ownsAgency(Agency $agency): bool
+    {
+        return $agency->owner_id === $this->id;
+    }
+
+    /**
+     * This user's role on a given account, or null if not a direct member.
+     * Note: agency owners may access an account (see canAccessAccount) without
+     * carrying a membership row, so this can be null even when access is allowed.
+     */
+    public function roleOn(Account $account): ?string
+    {
+        return $this->accounts()
+            ->where('accounts.id', $account->id)
+            ->first()?->pivot->role;
+    }
+
+    /**
+     * Whether this user may access an account: either a direct member, or the
+     * owner of the agency that provisioned it.
+     */
+    public function canAccessAccount(Account $account): bool
+    {
+        if ($account->agency_id !== null
+            && $this->ownedAgencies()->whereKey($account->agency_id)->exists()) {
+            return true;
+        }
+
+        return $this->accounts()->where('accounts.id', $account->id)->exists();
+    }
 }
