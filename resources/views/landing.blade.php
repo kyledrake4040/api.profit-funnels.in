@@ -204,8 +204,8 @@
 <section id="pricing">
     <div class="wrap">
         <h2>Simple, honest pricing</h2>
-        <p class="lead">Cancel anytime. Every plan includes the attribution dashboard and your data
-            export.</p>
+        <p class="lead">All prices in CAD. Cancel anytime. Every plan includes the attribution
+            dashboard and your data export.</p>
         <div class="pricing">
             <div class="tier">
                 <div class="name">Starter</div>

@@ -79,7 +79,7 @@ return [
     |
     */
 
-    'currency' => env('FUNNEL_SERVICE_CURRENCY', 'usd'),
+    'currency' => env('FUNNEL_SERVICE_CURRENCY', 'cad'),
 
     'plans' => [
         'starter' => 9900,
