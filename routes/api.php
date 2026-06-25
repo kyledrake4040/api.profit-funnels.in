@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\AgencyController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ContactController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FunnelController;
 use App\Http\Controllers\Api\OpportunityController;
 use App\Http\Controllers\Api\PipelineController;
@@ -58,6 +59,8 @@ Route::middleware('auth:api')->group(function () {
     // nested (not shallow) so the {account} param is always present for the
     // account.member guard to scope and authorize against.
     Route::middleware('account.member')->group(function () {
+        Route::get('accounts/{account}/dashboard', [DashboardController::class, 'show'])
+            ->name('accounts.dashboard');
         Route::apiResource('accounts.contacts', ContactController::class);
         Route::apiResource('accounts.pipelines', PipelineController::class)
             ->only(['index', 'store', 'show', 'destroy']);
