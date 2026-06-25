@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\AccountController;
+use App\Http\Controllers\Api\AgencyController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\FunnelController;
 use App\Http\Controllers\Api\FunnelPageController;
@@ -39,6 +41,16 @@ Route::get('plans/{plan}', [PlanController::class, 'show'])->name('plans.show');
 
 // Funnels, pages, subscriptions (authenticated)
 Route::middleware('auth:api')->group(function () {
+    // Tenancy: agencies (owned by the user) and sub-accounts.
+    Route::get('agencies', [AgencyController::class, 'index'])->name('agencies.index');
+    Route::post('agencies', [AgencyController::class, 'store'])->name('agencies.store');
+
+    Route::get('accounts', [AccountController::class, 'index'])->name('accounts.index');
+    Route::post('accounts', [AccountController::class, 'store'])->name('accounts.store');
+    Route::get('accounts/{account}', [AccountController::class, 'show'])
+        ->middleware('account.member')
+        ->name('accounts.show');
+
     Route::apiResource('funnels', FunnelController::class);
     Route::apiResource('funnels.pages', FunnelPageController::class);
 

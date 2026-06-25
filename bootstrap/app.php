@@ -27,6 +27,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+            // Tenancy: gate routes carrying an {account} to members / agency owners.
+            'account.member' => \App\Http\Middleware\EnsureAccountMember::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
