@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\AgencyController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\FunnelController;
 use App\Http\Controllers\Api\FunnelPageController;
 use App\Http\Controllers\Api\GoHighLevelWebhookController;
@@ -50,6 +51,13 @@ Route::middleware('auth:api')->group(function () {
     Route::get('accounts/{account}', [AccountController::class, 'show'])
         ->middleware('account.member')
         ->name('accounts.show');
+
+    // CRM contacts — nested under an account, gated by membership. Kept fully
+    // nested (not shallow) so the {account} param is always present for the
+    // account.member guard to scope and authorize against.
+    Route::middleware('account.member')->group(function () {
+        Route::apiResource('accounts.contacts', ContactController::class);
+    });
 
     Route::apiResource('funnels', FunnelController::class);
     Route::apiResource('funnels.pages', FunnelPageController::class);
