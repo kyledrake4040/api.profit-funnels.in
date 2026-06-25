@@ -26,6 +26,30 @@ return [
             'Customer',
         ],
     ],
+    'agency' => [
+        'status_active' => 'Active',
+        'status_suspended' => 'Suspended',
+        'status' => [
+            'Active',
+            'Suspended',
+        ],
+    ],
+    'account' => [
+        'status_active' => 'Active',
+        'status_suspended' => 'Suspended',
+        'status' => [
+            'Active',
+            'Suspended',
+        ],
+        'role_owner' => 'Owner',
+        'role_admin' => 'Admin',
+        'role_user' => 'User',
+        'roles' => [
+            'Owner',
+            'Admin',
+            'User',
+        ],
+    ],
     'funnel' => [
         'status_active' => 'Active',
         'status_inactive' => 'Inactive',
