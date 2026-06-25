@@ -5,6 +5,8 @@ use App\Http\Controllers\Api\AgencyController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\FunnelController;
+use App\Http\Controllers\Api\OpportunityController;
+use App\Http\Controllers\Api\PipelineController;
 use App\Http\Controllers\Api\FunnelPageController;
 use App\Http\Controllers\Api\GoHighLevelWebhookController;
 use App\Http\Controllers\Api\PlanController;
@@ -57,6 +59,9 @@ Route::middleware('auth:api')->group(function () {
     // account.member guard to scope and authorize against.
     Route::middleware('account.member')->group(function () {
         Route::apiResource('accounts.contacts', ContactController::class);
+        Route::apiResource('accounts.pipelines', PipelineController::class)
+            ->only(['index', 'store', 'show', 'destroy']);
+        Route::apiResource('accounts.opportunities', OpportunityController::class);
     });
 
     Route::apiResource('funnels', FunnelController::class);
