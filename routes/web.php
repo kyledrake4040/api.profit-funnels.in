@@ -33,3 +33,8 @@ Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name
 Route::get('/funnel/dashboard', \App\Http\Controllers\FunnelDashboardController::class)
     ->middleware('auth')
     ->name('funnel.dashboard');
+
+// CRM console — a zero-build SPA that talks to the token-auth API. Auth happens
+// client-side via /api/auth/login, so the page itself is public; the data
+// behind it is not.
+Route::view('/app', 'app.console')->name('app.console');
