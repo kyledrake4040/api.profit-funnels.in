@@ -40,4 +40,11 @@ return [
         'token' => env('HUBSPOT_TOKEN'),
     ],
 
+    // Claude (Anthropic) — powers the AI lead-reply drafts. Without a key, AI
+    // features stay off and the rest of the app is unaffected.
+    'claude' => [
+        'key'   => env('CLAUDE_API_KEY', ''),
+        'model' => env('CLAUDE_MODEL', 'claude-opus-4-8'),
+    ],
+
 ];
