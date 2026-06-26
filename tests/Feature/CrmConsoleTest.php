@@ -70,4 +70,13 @@ class CrmConsoleTest extends TestCase
             ->assertSee('/ai-reply')
             ->assertSee('aiReply');
     }
+
+    public function test_console_includes_the_ai_insight(): void
+    {
+        $this->get('/app')
+            ->assertOk()
+            ->assertSee("Today's insight", false)
+            ->assertSee('/dashboard/insight')
+            ->assertSee('getInsight');
+    }
 }

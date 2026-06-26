@@ -119,6 +119,11 @@
         <div id="dashboard" class="hidden">
             <div class="cards" id="statCards"></div>
 
+            <div style="display:flex;align-items:center;gap:.7rem;margin:-.6rem 0 1.4rem;flex-wrap:wrap">
+                <button class="btn-ghost" id="insightBtn" onclick="getInsight()">✨ Today's insight</button>
+                <div id="insightOut" class="muted" style="white-space:pre-line;font-size:.9rem;flex:1;min-width:240px"></div>
+            </div>
+
             <section class="block">
                 <h2>Contacts <span class="count" id="contactsCount"></span></h2>
                 <table>
@@ -568,6 +573,19 @@ window.moveDeal = async (dealId, dir) => {
         pipeline_id: p.id, stage_id: target.id, name: deal.name, value: deal.value, status,
     })});
     await loadAccountView();
+};
+
+window.getInsight = async () => {
+    const out = $('#insightOut'), btn = $('#insightBtn');
+    btn.disabled = true; out.textContent = 'Thinking…';
+    try {
+        const res = await api(`/accounts/${currentAccountId}/dashboard/insight`);
+        out.textContent = res.insight;
+    } catch (err) {
+        out.textContent = err.message;
+    } finally {
+        btn.disabled = false;
+    }
 };
 
 window.aiReply = async (contactId) => {
