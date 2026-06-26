@@ -168,6 +168,13 @@ class StripeWebhookController extends Controller
             }
         }
 
+        // A client just paid an invoice online: flip it to Paid. Best-effort —
+        // the Payment row above is the durable record, so a hiccup here never
+        // fails the webhook (which would trigger Stripe retries).
+        if ($event['type'] === 'checkout.session.completed') {
+            $this->markInvoicePaid($object);
+        }
+
         // Fan out on the events that matter for fulfillment.
         switch ($event['type']) {
             case 'checkout.session.completed':
@@ -177,6 +184,36 @@ class StripeWebhookController extends Controller
             case 'payment_intent.payment_failed':
                 Log::warning('Stripe payment failed.', ['payment_id' => $payment->id]);
                 break;
+        }
+    }
+
+    /**
+     * Mark an invoice paid from a checkout session's metadata.invoice_id.
+     *
+     * @param  array  $object  the Stripe checkout.session object
+     *
+     * @return void
+     */
+    protected function markInvoicePaid(array $object): void
+    {
+        $invoiceId = data_get($object, 'metadata.invoice_id');
+
+        if (empty($invoiceId)) {
+            return;
+        }
+
+        try {
+            $invoice = \App\Models\Invoice::find($invoiceId);
+
+            if ($invoice !== null && ! $invoice->isPaid()) {
+                $invoice->markPaid();
+                Log::info('Invoice marked paid via Stripe checkout.', ['invoice_id' => $invoice->id]);
+            }
+        } catch (Throwable $e) {
+            Log::error('Marking invoice paid from webhook failed.', [
+                'invoice_id' => $invoiceId,
+                'error'      => $e->getMessage(),
+            ]);
         }
     }
 

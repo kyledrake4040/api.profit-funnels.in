@@ -39,6 +39,14 @@ Route::get('/funnel/dashboard', \App\Http\Controllers\FunnelDashboardController:
 // behind it is not.
 Route::view('/app', 'app.console')->name('app.console');
 
+// Public invoice payment: a business shares /pay/{token}; the client opens it,
+// sees what they owe, and pays online via Stripe Checkout. No login required.
+Route::get('/pay/{token}', [\App\Http\Controllers\InvoicePaymentController::class, 'show'])->name('pay.show');
+Route::get('/pay/{token}/checkout', [\App\Http\Controllers\InvoicePaymentController::class, 'checkout'])
+    ->middleware('throttle:20,1')
+    ->name('pay.checkout');
+Route::get('/pay/{token}/success', [\App\Http\Controllers\InvoicePaymentController::class, 'success'])->name('pay.success');
+
 // Public client micro-sites: a published business site + lead form that drops
 // enquiries into that account's CRM. Lead posts are rate-limited.
 Route::get('/s/{slug}', [\App\Http\Controllers\SitePublicController::class, 'show'])->name('site.public');
