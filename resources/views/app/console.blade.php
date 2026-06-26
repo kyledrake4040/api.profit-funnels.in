@@ -122,7 +122,7 @@
             <section class="block">
                 <h2>Contacts <span class="count" id="contactsCount"></span></h2>
                 <table>
-                    <thead><tr><th>Name</th><th>Email</th><th>Company</th><th>Status</th></tr></thead>
+                    <thead><tr><th>Name</th><th>Email</th><th>Company</th><th>Status</th><th></th></tr></thead>
                     <tbody id="contactsBody"></tbody>
                 </table>
                 <form class="inline-form" id="contactForm">
@@ -477,7 +477,8 @@ function renderContacts(list) {
             <td class="muted">${esc(c.email) || '—'}</td>
             <td class="muted">${esc(c.company) || '—'}</td>
             <td><span class="pill ${esc(c.status)}">${esc(c.status)}</span></td>
-        </tr>`).join('') : `<tr><td colspan="4" class="empty">No contacts yet — add your first below.</td></tr>`;
+            <td><button class="btn-ghost" onclick="aiReply(${c.id})">✨ AI reply</button></td>
+        </tr>`).join('') : `<tr><td colspan="5" class="empty">No contacts yet — add your first below.</td></tr>`;
 }
 
 function renderPipelines(list) {
@@ -567,6 +568,15 @@ window.moveDeal = async (dealId, dir) => {
         pipeline_id: p.id, stage_id: target.id, name: deal.name, value: deal.value, status,
     })});
     await loadAccountView();
+};
+
+window.aiReply = async (contactId) => {
+    try {
+        const res = await api(`/accounts/${currentAccountId}/contacts/${contactId}/ai-reply`, { method:'POST' });
+        prompt('AI-drafted reply (copy & send):', res.draft);
+    } catch (err) {
+        alert(err.message);
+    }
 };
 
 /* ---- Mutations ---- */

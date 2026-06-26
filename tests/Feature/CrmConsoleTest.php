@@ -61,4 +61,13 @@ class CrmConsoleTest extends TestCase
             ->assertSee('convertQuote')
             ->assertSee('payInvoice');
     }
+
+    public function test_console_includes_the_ai_reply_action(): void
+    {
+        $this->get('/app')
+            ->assertOk()
+            ->assertSee('AI reply')
+            ->assertSee('/ai-reply')
+            ->assertSee('aiReply');
+    }
 }

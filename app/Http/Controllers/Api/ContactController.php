@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Ai\ClaudeClient;
+use App\Ai\LeadReplyDrafter;
 use App\Automation\AutomationEngine;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\ContactRequest;
@@ -12,6 +14,7 @@ use App\Models\Contact;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Throwable;
 
 /**
  * CRM contacts, nested under and scoped to an account. The account.member
@@ -113,6 +116,34 @@ final class ContactController extends Controller
         $model->delete();
 
         return $this->successResponse(null, __('Contact deleted.'));
+    }
+
+    /**
+     * AI-draft the first reply to a lead. Degrades gracefully when no Claude API
+     * key is configured (like Stripe checkout without a secret).
+     */
+    public function draftReply(Request $request): JsonResponse
+    {
+        $contact = $this->resolveContact($request);
+
+        if ($contact === null) {
+            return $this->errorResponse(__('Contact not found.'), 404);
+        }
+
+        if (! app(ClaudeClient::class)->isConfigured()) {
+            return $this->errorResponse(
+                __('AI replies are not set up yet. Add a Claude API key (CLAUDE_API_KEY) to enable them.'),
+                422,
+            );
+        }
+
+        try {
+            $draft = app(LeadReplyDrafter::class)->draftFor($contact);
+        } catch (Throwable $e) {
+            return $this->errorResponse(__('Could not draft a reply right now. Please try again.'), 502);
+        }
+
+        return $this->successResponse(['draft' => $draft]);
     }
 
     private function account(Request $request): Account
