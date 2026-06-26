@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\FunnelPageController;
 use App\Http\Controllers\Api\GoHighLevelWebhookController;
 use App\Http\Controllers\Api\PlanController;
 use App\Http\Controllers\Api\QuoteController;
+use App\Http\Controllers\Api\SiteController;
 use App\Http\Controllers\Api\QuickBooksWebhookController;
 use App\Http\Controllers\Api\StripeWebhookController;
 use App\Http\Controllers\Api\SubscriptionController;
@@ -79,6 +80,10 @@ Route::middleware('auth:api')->group(function () {
 
         Route::post('accounts/{account}/invoices/{invoice}/pay', [InvoiceController::class, 'pay'])->name('invoices.pay');
         Route::apiResource('accounts.invoices', InvoiceController::class);
+
+        // Client micro-site (one per account).
+        Route::get('accounts/{account}/site', [SiteController::class, 'show'])->name('site.show');
+        Route::put('accounts/{account}/site', [SiteController::class, 'upsert'])->name('site.upsert');
     });
 
     Route::apiResource('funnels', FunnelController::class);

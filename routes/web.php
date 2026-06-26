@@ -38,3 +38,10 @@ Route::get('/funnel/dashboard', \App\Http\Controllers\FunnelDashboardController:
 // client-side via /api/auth/login, so the page itself is public; the data
 // behind it is not.
 Route::view('/app', 'app.console')->name('app.console');
+
+// Public client micro-sites: a published business site + lead form that drops
+// enquiries into that account's CRM. Lead posts are rate-limited.
+Route::get('/s/{slug}', [\App\Http\Controllers\SitePublicController::class, 'show'])->name('site.public');
+Route::post('/s/{slug}/lead', [\App\Http\Controllers\SitePublicController::class, 'lead'])
+    ->middleware('throttle:10,1')
+    ->name('site.public.lead');
