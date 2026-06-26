@@ -119,7 +119,11 @@
             <a href="#signup" class="btn btn-primary">Book a free attribution audit</a>
             <a href="#how" class="btn btn-ghost">See how it works</a>
         </div>
-        <div class="reassure">No long contracts · Setup in days · You own your data</div>
+        <div class="reassure">30-day money-back guarantee · Cancel anytime · You own your data</div>
+        <div style="margin-top:.9rem;display:inline-block;font-size:.85rem;font-weight:700;color:var(--brand);
+            border:1px solid var(--brand);border-radius:999px;padding:.4rem .9rem;">
+            ★ Founding offer — the first 10 businesses lock in launch pricing for life
+        </div>
     </div>
 </header>
 
@@ -206,6 +210,12 @@
         <h2>Simple, honest pricing</h2>
         <p class="lead">All prices in CAD. Cancel anytime. Every plan includes the attribution
             dashboard and your data export.</p>
+        <div style="max-width:640px;margin:0 auto 1.6rem;padding:1rem 1.2rem;border:1px solid var(--brand);
+            border-radius:.8rem;background:rgba(34,197,94,.08);text-align:center;">
+            <strong style="color:var(--brand)">The 30-day "show me" guarantee.</strong>
+            If ProfitProof doesn't show you which channels actually book paid jobs in your first 30
+            days, email us — we refund every dollar. The risk is ours, not yours.
+        </div>
         <div class="pricing">
             <div class="tier">
                 <div class="name">Starter</div>
@@ -247,16 +257,27 @@
 <section id="faq" class="faq">
     <div class="wrap">
         <h2>Questions, answered</h2>
-        <details><summary>How long does setup take?</summary>
-            <p>Most businesses are live in a few days — we connect your GoHighLevel and QuickBooks,
-                deploy your dashboard, and confirm the first leads flow through.</p></details>
-        <details><summary>Do I own my data?</summary>
-            <p>Yes. It's your attribution data and you can export it any time. Cancel and it's yours.</p></details>
+        <details><summary>What if it doesn't work for my business?</summary>
+            <p>Then you don't pay. The 30-day money-back guarantee means if you don't see which
+                channels book paid jobs in your first month, we refund every dollar. You're risking
+                an email, not your money.</p></details>
+        <details><summary>I'm small / just getting going — is this for me?</summary>
+            <p>Especially then. The less you can afford to waste on marketing that doesn't pay, the
+                more it matters to know what actually books jobs. Starter is built for one business
+                doing exactly this.</p></details>
+        <details><summary>How is this different from Google Analytics?</summary>
+            <p>Analytics tells you about clicks and traffic. ProfitProof tells you about <em>dollars</em> —
+                it matches paid invoices back to the lead and channel that earned them, so you see
+                revenue per channel, not vanity metrics.</p></details>
+        <details><summary>I'm too busy to set up another tool.</summary>
+            <p>Setup is on us — most businesses are live in a few days with nothing to build. On the
+                Done-for-you plan we run the whole thing end to end and just send you the numbers.</p></details>
+        <details><summary>Do I own my data? Is there a contract?</summary>
+            <p>Your data is yours — export it any time. No lock-in: month to month, cancel anytime,
+                and it stays yours when you go.</p></details>
         <details><summary>What do I need to have already?</summary>
-            <p>A GoHighLevel account for leads and QuickBooks for invoicing. If you don't use those
-                yet, the Done-for-you plan covers setup.</p></details>
-        <details><summary>Is there a contract?</summary>
-            <p>No lock-in. Month to month, cancel anytime.</p></details>
+            <p>A GoHighLevel account for leads and QuickBooks for invoicing. Don't use those yet? The
+                Done-for-you plan covers setup.</p></details>
     </div>
 </section>
 
@@ -268,9 +289,13 @@
         @endif
         <div class="signup">
             <div>
-                <h2>Book your free attribution audit</h2>
+                <h2>See your real numbers — free.</h2>
                 <p class="lead">Tell us about your business and we'll show you, on your own numbers,
-                    which channels are actually booking jobs. No cost, no obligation.</p>
+                    which channels are actually booking jobs. No cost, no obligation, no pressure —
+                    just clarity you can act on this week.</p>
+                <p class="lead" style="font-weight:700;color:var(--brand)">Every month you guess is a
+                    month you're paying for marketing that may not be working. The audit is free and
+                    the guarantee is 30 days — there's no reason to keep guessing.</p>
             </div>
             <form method="POST" action="{{ route('leads.capture') }}" novalidate>
                 @csrf
@@ -304,7 +329,9 @@
                         <option value="done_for_you" @selected(old('plan')==='done_for_you')>Done-for-you — $499/mo</option>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-primary" style="width:100%">Get my free audit</button>
+                <button type="submit" class="btn btn-primary" style="width:100%">Show me which marketing books jobs →</button>
+                <p style="text-align:center;font-size:.8rem;color:var(--muted);margin:.6rem 0 0">
+                    Free audit · No credit card · We reply within one business day</p>
             </form>
         </div>
     </div>
