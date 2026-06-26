@@ -67,6 +67,16 @@ final class Account extends Model
         return $this->hasMany(Automation::class);
     }
 
+    public function quotes(): HasMany
+    {
+        return $this->hasMany(Quote::class);
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
     public function isActive(): bool
     {
         return $this->status === config('custom.account.status_active');

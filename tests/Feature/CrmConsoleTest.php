@@ -51,4 +51,14 @@ class CrmConsoleTest extends TestCase
             ->assertSee('/automations')
             ->assertSee('toggleAutomation');
     }
+
+    public function test_console_includes_quotes_and_invoices(): void
+    {
+        $this->get('/app')
+            ->assertOk()
+            ->assertSee('Quotes &amp; Invoices', false)
+            ->assertSee('/quotes')
+            ->assertSee('convertQuote')
+            ->assertSee('payInvoice');
+    }
 }

@@ -7,12 +7,14 @@ use App\Http\Controllers\Api\AutomationController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FunnelController;
+use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\JobController;
 use App\Http\Controllers\Api\OpportunityController;
 use App\Http\Controllers\Api\PipelineController;
 use App\Http\Controllers\Api\FunnelPageController;
 use App\Http\Controllers\Api\GoHighLevelWebhookController;
 use App\Http\Controllers\Api\PlanController;
+use App\Http\Controllers\Api\QuoteController;
 use App\Http\Controllers\Api\QuickBooksWebhookController;
 use App\Http\Controllers\Api\StripeWebhookController;
 use App\Http\Controllers\Api\SubscriptionController;
@@ -69,6 +71,14 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('accounts.opportunities', OpportunityController::class);
         Route::apiResource('accounts.jobs', JobController::class);
         Route::apiResource('accounts.automations', AutomationController::class);
+
+        // Quotes (with line items) → convert to invoices → get paid.
+        Route::post('accounts/{account}/quotes/{quote}/accept', [QuoteController::class, 'accept'])->name('quotes.accept');
+        Route::post('accounts/{account}/quotes/{quote}/convert', [QuoteController::class, 'convert'])->name('quotes.convert');
+        Route::apiResource('accounts.quotes', QuoteController::class);
+
+        Route::post('accounts/{account}/invoices/{invoice}/pay', [InvoiceController::class, 'pay'])->name('invoices.pay');
+        Route::apiResource('accounts.invoices', InvoiceController::class);
     });
 
     Route::apiResource('funnels', FunnelController::class);
