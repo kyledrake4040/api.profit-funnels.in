@@ -33,4 +33,13 @@ class CrmConsoleTest extends TestCase
             ->assertSee('/opportunities')
             ->assertSee('moveDeal');
     }
+
+    public function test_console_includes_the_jobs_module(): void
+    {
+        $this->get('/app')
+            ->assertOk()
+            ->assertSee('Schedule job')
+            ->assertSee('/jobs')
+            ->assertSee('completeJob');
+    }
 }

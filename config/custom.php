@@ -70,6 +70,18 @@ return [
             'Lost',
         ],
     ],
+    'job' => [
+        'status_scheduled' => 'Scheduled',
+        'status_in_progress' => 'In Progress',
+        'status_completed' => 'Completed',
+        'status_cancelled' => 'Cancelled',
+        'status' => [
+            'Scheduled',
+            'In Progress',
+            'Completed',
+            'Cancelled',
+        ],
+    ],
     'pipeline' => [
         // Seeded when a pipeline is created without explicit stages.
         'default_stages' => [
