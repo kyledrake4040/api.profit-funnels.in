@@ -66,6 +66,8 @@ Route::middleware('auth:api')->group(function () {
     Route::middleware('account.member')->group(function () {
         Route::get('accounts/{account}/dashboard', [DashboardController::class, 'show'])
             ->name('accounts.dashboard');
+        Route::get('accounts/{account}/dashboard/insight', [DashboardController::class, 'insight'])
+            ->name('accounts.dashboard.insight');
         Route::post('accounts/{account}/contacts/{contact}/ai-reply', [ContactController::class, 'draftReply'])
             ->name('contacts.ai-reply');
         Route::apiResource('accounts.contacts', ContactController::class);

@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Ai\ClaudeClient;
+use App\Ai\DashboardAdvisor;
 use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Throwable;
 
 /**
  * Per-account dashboard: a single roll-up of the account's CRM state — contact
@@ -62,6 +65,30 @@ final class DashboardController extends Controller
         ];
 
         return $this->successResponse($summary);
+    }
+
+    /**
+     * AI "what to do today" read on the account's numbers. Degrades gracefully
+     * when no Claude API key is configured.
+     */
+    public function insight(Request $request): JsonResponse
+    {
+        $account = $this->account($request);
+
+        if (! app(ClaudeClient::class)->isConfigured()) {
+            return $this->errorResponse(
+                __('AI insights are not set up yet. Add a Claude API key (CLAUDE_API_KEY) to enable them.'),
+                422,
+            );
+        }
+
+        try {
+            $insight = app(DashboardAdvisor::class)->adviseFor($account);
+        } catch (Throwable $e) {
+            return $this->errorResponse(__('Could not generate an insight right now. Please try again.'), 502);
+        }
+
+        return $this->successResponse(['insight' => $insight]);
     }
 
     private function account(Request $request): Account
