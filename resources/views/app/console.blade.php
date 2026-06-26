@@ -63,6 +63,19 @@
         .stage { background:#0e1626; border:1px solid var(--line); border-radius:.5rem; padding:.25rem .6rem; font-size:.82rem; }
         .empty { color:var(--muted); font-size:.9rem; padding:.4rem 0; }
         .muted { color:var(--muted); }
+
+        /* Pipeline board */
+        .board { display:flex; gap:.8rem; overflow-x:auto; padding-bottom:.5rem; }
+        .col { flex:0 0 220px; background:#0e1626; border:1px solid var(--line); border-radius:.7rem; padding:.7rem; }
+        .col h3 { margin:0 0 .15rem; font-size:.9rem; }
+        .col .colsum { color:var(--muted); font-size:.76rem; margin-bottom:.6rem; }
+        .deal { background:var(--panel); border:1px solid var(--line); border-radius:.55rem; padding:.55rem .6rem; margin-bottom:.5rem; }
+        .deal .dn { font-weight:650; font-size:.88rem; }
+        .deal .dv { color:var(--brand); font-size:.82rem; margin-top:.15rem; }
+        .deal .dm { display:flex; justify-content:space-between; align-items:center; margin-top:.5rem; gap:.3rem; }
+        .deal .dm button { padding:.15rem .5rem; font-size:.8rem; }
+        .deal.Won { border-color:var(--brand); } .deal.Lost { border-color:var(--danger); opacity:.7; }
+        .col .empty { font-size:.8rem; }
     </style>
 </head>
 <body>
@@ -124,6 +137,19 @@
                     <div style="flex:0"><button class="btn-primary" type="submit">Create pipeline</button></div>
                 </form>
             </section>
+
+            <section class="block" id="boardBlock">
+                <h2>Pipeline board
+                    <select id="boardPipeline" style="width:auto;margin-left:.4rem"></select>
+                </h2>
+                <div class="board" id="board"></div>
+                <form class="inline-form" id="dealForm">
+                    <div><label>Deal name</label><input id="dName" placeholder="e.g. Exterior repaint" required></div>
+                    <div style="flex:0;min-width:120px"><label>Value</label><input id="dValue" type="number" min="0" step="100" value="0"></div>
+                    <div style="flex:0;min-width:150px"><label>Stage</label><select id="dStage"></select></div>
+                    <div style="flex:0"><button class="btn-primary" type="submit">Add deal</button></div>
+                </form>
+            </section>
         </div>
     </main>
 </div>
@@ -133,6 +159,8 @@ const API = '/api';
 let token = localStorage.getItem('pp_token');
 let accounts = [];
 let currentAccountId = null;
+let pipelines = [];
+let boardPipelineId = null;
 
 async function api(path, opts = {}) {
     const headers = { 'Accept':'application/json', 'Content-Type':'application/json', ...(opts.headers||{}) };
@@ -197,12 +225,15 @@ $('#accountSelect').addEventListener('change', e => { currentAccountId = e.targe
 /* ---- Account view ---- */
 async function loadAccountView() {
     $('#dashboard').classList.remove('hidden');
-    const [dash, contacts, pipelines] = await Promise.all([
+    const [dash, contacts, pl] = await Promise.all([
         api(`/accounts/${currentAccountId}/dashboard`),
         api(`/accounts/${currentAccountId}/contacts`),
         api(`/accounts/${currentAccountId}/pipelines`),
     ]);
+    pipelines = pl;
     renderStats(dash); renderContacts(contacts); renderPipelines(pipelines);
+    setupBoard();
+    await renderBoard();
 }
 
 function renderStats(d) {
@@ -238,6 +269,85 @@ function renderPipelines(list) {
             <div class="stages">${(p.stages||[]).map(s => `<span class="stage">${esc(s.name)}</span>`).join('')}</div>
         </div>`).join('') : `<div class="empty">No pipelines yet — create one below (stages are seeded automatically).</div>`;
 }
+
+/* ---- Pipeline board ---- */
+function currentBoardPipeline() {
+    return pipelines.find(p => p.id == boardPipelineId) || pipelines[0] || null;
+}
+
+function setupBoard() {
+    const sel = $('#boardPipeline');
+    if (!pipelines.length) {
+        $('#boardBlock').classList.add('hidden');
+        return;
+    }
+    $('#boardBlock').classList.remove('hidden');
+    sel.innerHTML = pipelines.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
+    if (!pipelines.some(p => p.id == boardPipelineId)) boardPipelineId = pipelines[0].id;
+    sel.value = boardPipelineId;
+    const p = currentBoardPipeline();
+    $('#dStage').innerHTML = (p.stages||[]).map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+}
+
+async function renderBoard() {
+    const p = currentBoardPipeline();
+    if (!p) return;
+    const deals = await api(`/accounts/${currentAccountId}/opportunities?pipeline_id=${p.id}`);
+    const stages = p.stages || [];
+    $('#board').innerHTML = stages.map((s, idx) => {
+        const inStage = deals.filter(d => d.stage_id == s.id);
+        const sum = inStage.reduce((t, d) => t + Number(d.value||0), 0);
+        const cards = inStage.length ? inStage.map(d => `
+            <div class="deal ${esc(d.status)}">
+                <div class="dn">${esc(d.name)}</div>
+                <div class="dv">${money(d.value, d.currency)}</div>
+                <div class="dm">
+                    <button class="btn-ghost" ${idx===0?'disabled':''} onclick="moveDeal(${d.id},-1)">◀</button>
+                    <span class="pill ${esc(d.status)}" style="font-size:.7rem">${esc(d.status)}</span>
+                    <button class="btn-ghost" ${idx===stages.length-1?'disabled':''} onclick="moveDeal(${d.id},1)">▶</button>
+                </div>
+            </div>`).join('') : `<div class="empty">—</div>`;
+        return `<div class="col">
+            <h3>${esc(s.name)}</h3>
+            <div class="colsum">${inStage.length} · ${money(sum)}</div>
+            ${cards}
+        </div>`;
+    }).join('');
+}
+
+$('#boardPipeline').addEventListener('change', e => { boardPipelineId = e.target.value; setupBoard(); renderBoard(); });
+
+$('#dealForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const p = currentBoardPipeline();
+    if (!p) return;
+    await api(`/accounts/${currentAccountId}/opportunities`, { method:'POST', body: JSON.stringify({
+        pipeline_id: p.id, stage_id: $('#dStage').value,
+        name: $('#dName').value, value: Number($('#dValue').value||0),
+    })});
+    $('#dName').value=''; $('#dValue').value='0';
+    await loadAccountView();
+});
+
+// Move a deal to the previous/next stage. If the target stage is named Won/Lost,
+// reflect that in the deal's status so the dashboard totals stay accurate.
+window.moveDeal = async (dealId, dir) => {
+    const p = currentBoardPipeline();
+    const stages = p.stages || [];
+    const deals = await api(`/accounts/${currentAccountId}/opportunities?pipeline_id=${p.id}`);
+    const deal = deals.find(d => d.id == dealId);
+    if (!deal) return;
+    const i = stages.findIndex(s => s.id == deal.stage_id);
+    const target = stages[i + dir];
+    if (!target) return;
+    let status = 'Open';
+    if (/^won$/i.test(target.name)) status = 'Won';
+    else if (/^lost$/i.test(target.name)) status = 'Lost';
+    await api(`/accounts/${currentAccountId}/opportunities/${dealId}`, { method:'PUT', body: JSON.stringify({
+        pipeline_id: p.id, stage_id: target.id, name: deal.name, value: deal.value, status,
+    })});
+    await loadAccountView();
+};
 
 /* ---- Mutations ---- */
 $('#contactForm').addEventListener('submit', async e => {
