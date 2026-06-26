@@ -56,6 +56,8 @@
             border:1px solid var(--line); }
         .pill.Lead { color:var(--accent); } .pill.Customer { color:var(--brand); }
         .pill.Open { color:var(--accent); } .pill.Won { color:var(--brand); } .pill.Lost { color:var(--danger); }
+        .pill.Scheduled { color:var(--accent); } .pill.InProgress { color:#fbbf24; }
+        .pill.Completed { color:var(--brand); } .pill.Cancelled { color:var(--danger); }
         .inline-form { display:flex; flex-wrap:wrap; gap:.6rem; align-items:flex-end; margin-top:1rem; }
         .inline-form > div { flex:1; min-width:140px; }
         .inline-form label { margin-top:0; }
@@ -135,6 +137,21 @@
                 <form class="inline-form" id="pipelineForm">
                     <div><label>New pipeline name</label><input id="pName" placeholder="e.g. Sales" required></div>
                     <div style="flex:0"><button class="btn-primary" type="submit">Create pipeline</button></div>
+                </form>
+            </section>
+
+            <section class="block">
+                <h2>Jobs <span class="count" id="jobsCount"></span></h2>
+                <table>
+                    <thead><tr><th>Job</th><th>Client</th><th>Scheduled</th><th>Value</th><th>Status</th><th></th></tr></thead>
+                    <tbody id="jobsBody"></tbody>
+                </table>
+                <form class="inline-form" id="jobForm">
+                    <div><label>Job title</label><input id="jTitle" placeholder="e.g. Exterior repaint" required></div>
+                    <div style="flex:0;min-width:160px"><label>Client</label><select id="jContact"></select></div>
+                    <div style="flex:0;min-width:170px"><label>Scheduled</label><input id="jWhen" type="date"></div>
+                    <div style="flex:0;min-width:110px"><label>Value</label><input id="jValue" type="number" min="0" step="50" value="0"></div>
+                    <div style="flex:0"><button class="btn-primary" type="submit">Schedule job</button></div>
                 </form>
             </section>
 
@@ -225,16 +242,57 @@ $('#accountSelect').addEventListener('change', e => { currentAccountId = e.targe
 /* ---- Account view ---- */
 async function loadAccountView() {
     $('#dashboard').classList.remove('hidden');
-    const [dash, contacts, pl] = await Promise.all([
+    const [dash, contacts, pl, jobs] = await Promise.all([
         api(`/accounts/${currentAccountId}/dashboard`),
         api(`/accounts/${currentAccountId}/contacts`),
         api(`/accounts/${currentAccountId}/pipelines`),
+        api(`/accounts/${currentAccountId}/jobs`),
     ]);
     pipelines = pl;
     renderStats(dash); renderContacts(contacts); renderPipelines(pipelines);
+    renderJobs(jobs, contacts);
     setupBoard();
     await renderBoard();
 }
+
+function renderJobs(list, contacts) {
+    $('#jobsCount').textContent = list.length ? `(${list.length})` : '';
+    const name = c => c ? `${c.first_name} ${c.last_name||''}`.trim() : '—';
+    $('#jobsBody').innerHTML = list.length ? list.map(j => `
+        <tr>
+            <td>${esc(j.title)}</td>
+            <td class="muted">${esc(name(j.contact))}</td>
+            <td class="muted">${j.scheduled_at ? esc(j.scheduled_at.slice(0,10)) : '—'}</td>
+            <td>${money(j.value, j.currency)}</td>
+            <td><span class="pill ${esc(j.status).replace(' ','')}">${esc(j.status)}</span></td>
+            <td>${j.status === 'Completed' ? '' : `<button class="btn-ghost" onclick="completeJob(${j.id})">Complete</button>`}</td>
+        </tr>`).join('') : `<tr><td colspan="6" class="empty">No jobs yet — schedule one below.</td></tr>`;
+    // contact picker for the add-job form
+    $('#jContact').innerHTML = `<option value="">— no client —</option>` +
+        contacts.map(c => `<option value="${c.id}">${esc(c.first_name)} ${esc(c.last_name||'')}</option>`).join('');
+}
+
+window.completeJob = async (jobId) => {
+    const job = (await api(`/accounts/${currentAccountId}/jobs`)).find(j => j.id == jobId);
+    if (!job) return;
+    await api(`/accounts/${currentAccountId}/jobs/${jobId}`, { method:'PUT', body: JSON.stringify({
+        title: job.title, status: 'Completed', contact_id: job.contact_id,
+        scheduled_at: job.scheduled_at, value: job.value,
+    })});
+    await loadAccountView();
+};
+
+document.getElementById('jobForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    await api(`/accounts/${currentAccountId}/jobs`, { method:'POST', body: JSON.stringify({
+        title: $('#jTitle').value,
+        contact_id: $('#jContact').value || null,
+        scheduled_at: $('#jWhen').value || null,
+        value: Number($('#jValue').value||0),
+    })});
+    e.target.reset();
+    await loadAccountView();
+});
 
 function renderStats(d) {
     const o = d.opportunities || {};

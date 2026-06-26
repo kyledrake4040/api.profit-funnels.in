@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FunnelController;
+use App\Http\Controllers\Api\JobController;
 use App\Http\Controllers\Api\OpportunityController;
 use App\Http\Controllers\Api\PipelineController;
 use App\Http\Controllers\Api\FunnelPageController;
@@ -65,6 +66,7 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('accounts.pipelines', PipelineController::class)
             ->only(['index', 'store', 'show', 'destroy']);
         Route::apiResource('accounts.opportunities', OpportunityController::class);
+        Route::apiResource('accounts.jobs', JobController::class);
     });
 
     Route::apiResource('funnels', FunnelController::class);
