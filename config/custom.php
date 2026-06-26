@@ -82,6 +82,26 @@ return [
             'Cancelled',
         ],
     ],
+    'automation' => [
+        // Events the engine listens for. Each carries a "contact" in context.
+        'event_contact_created' => 'contact.created',
+        'event_opportunity_won' => 'opportunity.won',
+        'event_job_completed' => 'job.completed',
+        'events' => [
+            'contact.created',
+            'opportunity.won',
+            'job.completed',
+        ],
+        // What an action can do.
+        'action_add_tag' => 'add_tag',
+        'action_set_contact_status' => 'set_contact_status',
+        'action_create_job' => 'create_job',
+        'actions' => [
+            'add_tag',
+            'set_contact_status',
+            'create_job',
+        ],
+    ],
     'pipeline' => [
         // Seeded when a pipeline is created without explicit stages.
         'default_stages' => [

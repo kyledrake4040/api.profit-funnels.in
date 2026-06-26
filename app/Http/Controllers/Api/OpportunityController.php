@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Automation\AutomationEngine;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\OpportunityRequest;
 use App\Models\Account;
@@ -54,6 +55,8 @@ final class OpportunityController extends Controller
             'expected_close_at' => $request->input('expected_close_at'),
         ]);
 
+        $this->fireIfWon($opportunity, $account, false);
+
         return $this->successResponse($opportunity->load(['stage', 'contact']), __('Opportunity created.'), 201);
     }
 
@@ -82,10 +85,14 @@ final class OpportunityController extends Controller
             return $error;
         }
 
+        $wasWon = $model->status === config('custom.opportunity.status_won');
+
         $model->fill([
             'pipeline_id'       => $request->input('pipeline_id'),
             'stage_id'          => $request->input('stage_id'),
-            'contact_id'        => $request->input('contact_id'),
+            // Preserve the linked contact when the caller doesn't send one (e.g.
+            // the board just moves a deal between stages).
+            'contact_id'        => $request->input('contact_id', $model->contact_id),
             'name'              => $request->input('name'),
             'value'             => $request->input('value', $model->value),
             'currency'          => $request->input('currency', $model->currency),
@@ -93,6 +100,8 @@ final class OpportunityController extends Controller
             'expected_close_at' => $request->input('expected_close_at'),
         ]);
         $model->save();
+
+        $this->fireIfWon($model, $account, $wasWon);
 
         return $this->successResponse($model->load(['stage', 'contact']), __('Opportunity updated.'));
     }
@@ -108,6 +117,29 @@ final class OpportunityController extends Controller
         $model->delete();
 
         return $this->successResponse(null, __('Opportunity deleted.'));
+    }
+
+    /**
+     * Fire "opportunity.won" automations the moment a deal first becomes Won
+     * (not on every save of an already-won deal). The deal's contact, when set,
+     * is the automation subject — enabling the GHL→Jobber bridge (won deal →
+     * auto-create a job).
+     */
+    private function fireIfWon(Opportunity $opportunity, Account $account, bool $wasWon): void
+    {
+        if ($wasWon || $opportunity->status !== config('custom.opportunity.status_won')) {
+            return;
+        }
+
+        if ($opportunity->contact_id === null) {
+            return;
+        }
+
+        app(AutomationEngine::class)->fire(
+            config('custom.automation.event_opportunity_won'),
+            $account,
+            ['contact' => $opportunity->contact],
+        );
     }
 
     private function account(Request $request): Account

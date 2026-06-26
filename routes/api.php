@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\AgencyController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\AutomationController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FunnelController;
@@ -67,6 +68,7 @@ Route::middleware('auth:api')->group(function () {
             ->only(['index', 'store', 'show', 'destroy']);
         Route::apiResource('accounts.opportunities', OpportunityController::class);
         Route::apiResource('accounts.jobs', JobController::class);
+        Route::apiResource('accounts.automations', AutomationController::class);
     });
 
     Route::apiResource('funnels', FunnelController::class);
