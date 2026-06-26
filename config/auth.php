@@ -42,7 +42,11 @@ return [
         ],
 
         'api' => [
-            'driver' => 'token',
+            // Passport issues the access tokens (AuthController), so the guard
+            // that validates them on each request must be the passport driver —
+            // not Laravel's simple "token" guard, which silently 401s real
+            // bearer tokens over HTTP (tests mask this via Passport::actingAs).
+            'driver' => 'passport',
             'provider' => 'users',
             'hash' => false,
         ],
