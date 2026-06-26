@@ -62,6 +62,11 @@ final class Account extends Model
         return $this->hasMany(ServiceJob::class);
     }
 
+    public function automations(): HasMany
+    {
+        return $this->hasMany(Automation::class);
+    }
+
     public function isActive(): bool
     {
         return $this->status === config('custom.account.status_active');

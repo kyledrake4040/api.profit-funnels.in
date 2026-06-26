@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Automation\AutomationEngine;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\ContactRequest;
 use App\Models\Account;
@@ -54,7 +55,15 @@ final class ContactController extends Controller
             'notes'         => $request->input('notes'),
         ]);
 
-        return $this->successResponse($contact, __('Contact created.'), 201);
+        // Run any "contact.created" automations (tag, set status, create job…),
+        // then reflect their effect in the response.
+        app(AutomationEngine::class)->fire(
+            config('custom.automation.event_contact_created'),
+            $this->account($request),
+            ['contact' => $contact],
+        );
+
+        return $this->successResponse($contact->fresh(), __('Contact created.'), 201);
     }
 
     public function show(Request $request): JsonResponse
