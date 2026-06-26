@@ -24,4 +24,13 @@ class CrmConsoleTest extends TestCase
             ->assertSee('/auth/login')
             ->assertSee('/accounts');
     }
+
+    public function test_console_includes_the_pipeline_board(): void
+    {
+        $this->get('/app')
+            ->assertOk()
+            ->assertSee('Pipeline board')
+            ->assertSee('/opportunities')
+            ->assertSee('moveDeal');
+    }
 }
