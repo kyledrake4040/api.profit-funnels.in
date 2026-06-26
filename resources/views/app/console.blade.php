@@ -58,6 +58,9 @@
         .pill.Open { color:var(--accent); } .pill.Won { color:var(--brand); } .pill.Lost { color:var(--danger); }
         .pill.Scheduled { color:var(--accent); } .pill.InProgress { color:#fbbf24; }
         .pill.Completed { color:var(--brand); } .pill.Cancelled { color:var(--danger); }
+        .pill.Draft { color:var(--muted); } .pill.Sent { color:var(--accent); }
+        .pill.Accepted { color:var(--brand); } .pill.Declined { color:var(--danger); }
+        .pill.Paid { color:var(--brand); } .pill.Void { color:var(--danger); }
         .inline-form { display:flex; flex-wrap:wrap; gap:.6rem; align-items:flex-end; margin-top:1rem; }
         .inline-form > div { flex:1; min-width:140px; }
         .inline-form label { margin-top:0; }
@@ -152,6 +155,31 @@
                     <div style="flex:0;min-width:170px"><label>Scheduled</label><input id="jWhen" type="date"></div>
                     <div style="flex:0;min-width:110px"><label>Value</label><input id="jValue" type="number" min="0" step="50" value="0"></div>
                     <div style="flex:0"><button class="btn-primary" type="submit">Schedule job</button></div>
+                </form>
+            </section>
+
+            <section class="block">
+                <h2>Quotes &amp; Invoices <span class="count" id="invCount"></span></h2>
+                <p class="muted" style="margin:0 0 .8rem;font-size:.85rem">Quote a client → convert to an invoice → mark it paid. Paid totals feed the dashboard.</p>
+
+                <h3 style="margin:.4rem 0 .3rem;font-size:.95rem">Quotes</h3>
+                <table>
+                    <thead><tr><th>#</th><th>Client</th><th>Total</th><th>Status</th><th></th></tr></thead>
+                    <tbody id="quotesBody"></tbody>
+                </table>
+
+                <h3 style="margin:1.1rem 0 .3rem;font-size:.95rem">Invoices</h3>
+                <table>
+                    <thead><tr><th>#</th><th>Client</th><th>Total</th><th>Status</th><th></th></tr></thead>
+                    <tbody id="invoicesBody"></tbody>
+                </table>
+
+                <form class="inline-form" id="quoteForm">
+                    <div style="flex:0;min-width:160px"><label>New quote — client</label><select id="qContact"></select></div>
+                    <div><label>Line item</label><input id="qDesc" placeholder="e.g. Exterior repaint" required></div>
+                    <div style="flex:0;min-width:90px"><label>Qty</label><input id="qQty" type="number" min="0" step="1" value="1"></div>
+                    <div style="flex:0;min-width:120px"><label>Unit price</label><input id="qPrice" type="number" min="0" step="50" value="0"></div>
+                    <div style="flex:0"><button class="btn-primary" type="submit">Create quote</button></div>
                 </form>
             </section>
 
@@ -267,20 +295,68 @@ $('#accountSelect').addEventListener('change', e => { currentAccountId = e.targe
 /* ---- Account view ---- */
 async function loadAccountView() {
     $('#dashboard').classList.remove('hidden');
-    const [dash, contacts, pl, jobs, autos] = await Promise.all([
+    const [dash, contacts, pl, jobs, autos, quotes, invoices] = await Promise.all([
         api(`/accounts/${currentAccountId}/dashboard`),
         api(`/accounts/${currentAccountId}/contacts`),
         api(`/accounts/${currentAccountId}/pipelines`),
         api(`/accounts/${currentAccountId}/jobs`),
         api(`/accounts/${currentAccountId}/automations`),
+        api(`/accounts/${currentAccountId}/quotes`),
+        api(`/accounts/${currentAccountId}/invoices`),
     ]);
     pipelines = pl;
     renderStats(dash); renderContacts(contacts); renderPipelines(pipelines);
     renderJobs(jobs, contacts);
+    renderInvoicing(quotes, invoices, contacts);
     renderAutomations(autos);
     setupBoard();
     await renderBoard();
 }
+
+function renderInvoicing(quotes, invoices, contacts) {
+    $('#invCount').textContent = (quotes.length + invoices.length) ? `(${quotes.length}q / ${invoices.length}i)` : '';
+    const nm = c => c ? `${c.first_name} ${c.last_name||''}`.trim() : '—';
+
+    $('#quotesBody').innerHTML = quotes.length ? quotes.map(q => `
+        <tr>
+            <td>${esc(q.number)}</td>
+            <td class="muted">${esc(nm(q.contact))}</td>
+            <td>${money(q.total, q.currency)}</td>
+            <td><span class="pill ${esc(q.status)}">${esc(q.status)}</span></td>
+            <td>${q.status === 'Accepted' ? '' : `<button class="btn-ghost" onclick="convertQuote(${q.id})">→ Invoice</button>`}</td>
+        </tr>`).join('') : `<tr><td colspan="5" class="empty">No quotes yet.</td></tr>`;
+
+    $('#invoicesBody').innerHTML = invoices.length ? invoices.map(v => `
+        <tr>
+            <td>${esc(v.number)}</td>
+            <td class="muted">${esc(nm(v.contact))}</td>
+            <td>${money(v.total, v.currency)}</td>
+            <td><span class="pill ${esc(v.status)}">${esc(v.status)}</span></td>
+            <td>${v.status === 'Paid' ? '' : `<button class="btn-primary" onclick="payInvoice(${v.id})">Mark paid</button>`}</td>
+        </tr>`).join('') : `<tr><td colspan="5" class="empty">No invoices yet.</td></tr>`;
+
+    $('#qContact').innerHTML = `<option value="">— no client —</option>` +
+        contacts.map(c => `<option value="${c.id}">${esc(c.first_name)} ${esc(c.last_name||'')}</option>`).join('');
+}
+
+window.convertQuote = async (id) => {
+    await api(`/accounts/${currentAccountId}/quotes/${id}/convert`, { method:'POST' });
+    await loadAccountView();
+};
+window.payInvoice = async (id) => {
+    await api(`/accounts/${currentAccountId}/invoices/${id}/pay`, { method:'POST' });
+    await loadAccountView();
+};
+
+document.getElementById('quoteForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    await api(`/accounts/${currentAccountId}/quotes`, { method:'POST', body: JSON.stringify({
+        contact_id: $('#qContact').value || null,
+        items: [{ description: $('#qDesc').value, quantity: Number($('#qQty').value||1), unit_price: Number($('#qPrice').value||0) }],
+    })});
+    e.target.reset();
+    await loadAccountView();
+});
 
 const TRIGGER_LABEL = {
     'contact.created': 'a contact is created',
@@ -381,12 +457,13 @@ document.getElementById('jobForm').addEventListener('submit', async e => {
 
 function renderStats(d) {
     const o = d.opportunities || {};
+    const inv = d.invoices || {};
     const cards = [
         ['Contacts', d.contacts?.total ?? 0, false],
         ['Open deals', o.open_count ?? 0, false],
-        ['Open value', money(o.open_value), true],
         ['Won value', money(o.won_value), true],
-        ['Pipelines', d.pipelines ?? 0, false],
+        ['Paid', money(inv.paid_total), true],
+        ['Outstanding', money(inv.outstanding_total), false],
     ];
     $('#statCards').innerHTML = cards.map(([k,v,b]) =>
         `<div class="stat"><div class="k">${k}</div><div class="v ${b?'brand':''}">${v}</div></div>`).join('');

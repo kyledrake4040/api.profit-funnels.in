@@ -82,6 +82,30 @@ return [
             'Cancelled',
         ],
     ],
+    'quote' => [
+        'status_draft' => 'Draft',
+        'status_sent' => 'Sent',
+        'status_accepted' => 'Accepted',
+        'status_declined' => 'Declined',
+        'status' => [
+            'Draft',
+            'Sent',
+            'Accepted',
+            'Declined',
+        ],
+    ],
+    'invoice' => [
+        'status_draft' => 'Draft',
+        'status_sent' => 'Sent',
+        'status_paid' => 'Paid',
+        'status_void' => 'Void',
+        'status' => [
+            'Draft',
+            'Sent',
+            'Paid',
+            'Void',
+        ],
+    ],
     'automation' => [
         // Events the engine listens for. Each carries a "contact" in context.
         'event_contact_created' => 'contact.created',

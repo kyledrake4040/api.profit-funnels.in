@@ -46,6 +46,13 @@ final class DashboardController extends Controller
                 'won_value'   => (float) (clone $opportunities)->where('status', $won)->sum('value'),
                 'lost_count'  => (clone $opportunities)->where('status', $lost)->count(),
             ],
+            'invoices' => [
+                'paid_total'        => (float) $account->invoices()->where('status', config('custom.invoice.status_paid'))->sum('total'),
+                'outstanding_total' => (float) $account->invoices()->whereIn('status', [
+                    config('custom.invoice.status_draft'),
+                    config('custom.invoice.status_sent'),
+                ])->sum('total'),
+            ],
             'pipelines' => $account->pipelines()->count(),
             'recent_opportunities' => $account->opportunities()
                 ->with(['stage:id,name', 'contact:id,first_name,last_name'])
