@@ -110,7 +110,7 @@
 
 <div style="background:var(--brand);color:var(--brand-ink);text-align:center;font-weight:800;
     padding:.6rem 1rem;font-size:.95rem;">
-    ☀️ Summer offer — 50% off your first 3 months. New signups before Sept 1.
+    🎉 8 days free — then 50% off your first 3 months. New signups before Sept 1.
 </div>
 
 <header class="hero">
@@ -121,10 +121,10 @@
             in the bank. ProfitProof ties every lead to real revenue, so you double down on what
             works and cut what doesn't.</p>
         <div class="cta-row">
-            <a href="#signup" class="btn btn-primary">Book a free attribution audit</a>
+            <a href="#signup" class="btn btn-primary">Start your 8-day free trial</a>
             <a href="#how" class="btn btn-ghost">See how it works</a>
         </div>
-        <div class="reassure">30-day money-back guarantee · Cancel anytime · You own your data</div>
+        <div class="reassure">8 days free · 30-day money-back guarantee · Cancel anytime · You own your data</div>
         <div style="margin-top:.9rem;display:inline-block;font-size:.85rem;font-weight:700;color:var(--brand);
             border:1px solid var(--brand);border-radius:999px;padding:.4rem .9rem;">
             ★ Founding offer — the first 10 businesses lock in launch pricing for life
@@ -216,7 +216,8 @@
         <p class="lead">All prices in CAD. Cancel anytime. Every plan includes the attribution
             dashboard and your data export.</p>
         <p class="lead" style="font-weight:800;color:var(--brand);font-size:1.15rem;">
-            ☀️ Summer offer: <strong>50% off your first 3 months</strong> for new signups before Sept 1.
+            🎉 Start with <strong>8 days free</strong> — then <strong>50% off your first 3 months</strong>
+            for new signups before Sept 1.
         </p>
         <div style="max-width:640px;margin:0 auto 1.6rem;padding:1rem 1.2rem;border:1px solid var(--brand);
             border-radius:.8rem;background:rgba(34,197,94,.08);text-align:center;">
@@ -266,9 +267,10 @@
     <div class="wrap">
         <h2>Questions, answered</h2>
         <details><summary>What if it doesn't work for my business?</summary>
-            <p>Then you don't pay. The 30-day money-back guarantee means if you don't see which
-                channels book paid jobs in your first month, we refund every dollar. You're risking
-                an email, not your money.</p></details>
+            <p>You start with 8 days free, so you can see it on your own numbers before paying a cent.
+                After that, the 30-day money-back guarantee still has you covered — if it's not showing
+                you which channels book paid jobs, we refund every dollar. You're risking an email,
+                not your money.</p></details>
         <details><summary>I'm small / just getting going — is this for me?</summary>
             <p>Especially then. The less you can afford to waste on marketing that doesn't pay, the
                 more it matters to know what actually books jobs. Starter is built for one business
@@ -337,9 +339,9 @@
                         <option value="done_for_you" @selected(old('plan')==='done_for_you')>Done-for-you — $499/mo</option>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-primary" style="width:100%">Show me which marketing books jobs →</button>
+                <button type="submit" class="btn btn-primary" style="width:100%">Start my 8-day free trial →</button>
                 <p style="text-align:center;font-size:.8rem;color:var(--muted);margin:.6rem 0 0">
-                    Free audit · No credit card · We reply within one business day</p>
+                    8 days free · No credit card to start · We reply within one business day</p>
             </form>
         </div>
     </div>
