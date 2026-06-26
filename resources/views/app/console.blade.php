@@ -155,6 +155,31 @@
                 </form>
             </section>
 
+            <section class="block">
+                <h2>Automations <span class="count" id="autoCount"></span></h2>
+                <p class="muted" style="margin:0 0 .8rem;font-size:.85rem">When something happens, do something — automatically.</p>
+                <div id="autoList"></div>
+                <form class="inline-form" id="autoForm">
+                    <div><label>Name</label><input id="aName" placeholder="e.g. Won deal books a job" required></div>
+                    <div style="flex:0;min-width:190px"><label>When… (trigger)</label>
+                        <select id="aTrigger">
+                            <option value="contact.created">A contact is created</option>
+                            <option value="opportunity.won">A deal is won</option>
+                            <option value="job.completed">A job is completed</option>
+                        </select>
+                    </div>
+                    <div style="flex:0;min-width:180px"><label>…do this (action)</label>
+                        <select id="aAction">
+                            <option value="add_tag">Add a tag</option>
+                            <option value="set_contact_status">Set contact status</option>
+                            <option value="create_job">Create a job</option>
+                        </select>
+                    </div>
+                    <div style="flex:0;min-width:170px"><label id="aValueLabel">Tag</label><input id="aValue" placeholder="value"></div>
+                    <div style="flex:0"><button class="btn-primary" type="submit">Create</button></div>
+                </form>
+            </section>
+
             <section class="block" id="boardBlock">
                 <h2>Pipeline board
                     <select id="boardPipeline" style="width:auto;margin-left:.4rem"></select>
@@ -242,18 +267,78 @@ $('#accountSelect').addEventListener('change', e => { currentAccountId = e.targe
 /* ---- Account view ---- */
 async function loadAccountView() {
     $('#dashboard').classList.remove('hidden');
-    const [dash, contacts, pl, jobs] = await Promise.all([
+    const [dash, contacts, pl, jobs, autos] = await Promise.all([
         api(`/accounts/${currentAccountId}/dashboard`),
         api(`/accounts/${currentAccountId}/contacts`),
         api(`/accounts/${currentAccountId}/pipelines`),
         api(`/accounts/${currentAccountId}/jobs`),
+        api(`/accounts/${currentAccountId}/automations`),
     ]);
     pipelines = pl;
     renderStats(dash); renderContacts(contacts); renderPipelines(pipelines);
     renderJobs(jobs, contacts);
+    renderAutomations(autos);
     setupBoard();
     await renderBoard();
 }
+
+const TRIGGER_LABEL = {
+    'contact.created': 'a contact is created',
+    'opportunity.won': 'a deal is won',
+    'job.completed': 'a job is completed',
+};
+const ACTION_LABEL = {
+    add_tag: c => `add tag “${c?.tag ?? ''}”`,
+    set_contact_status: c => `set status to “${c?.status ?? ''}”`,
+    create_job: c => `create job “${c?.title ?? 'Follow up'}”`,
+};
+
+function renderAutomations(list) {
+    $('#autoCount').textContent = list.length ? `(${list.length})` : '';
+    $('#autoList').innerHTML = list.length ? list.map(a => {
+        const acts = (a.actions||[]).map(x => (ACTION_LABEL[x.type]?.(x.config)||x.type)).join(', ');
+        return `<div style="display:flex;align-items:center;gap:.6rem;padding:.55rem 0;border-bottom:1px solid var(--line)">
+            <span class="pill ${a.is_active?'Won':'Lost'}">${a.is_active?'On':'Off'}</span>
+            <div style="flex:1">
+                <strong>${esc(a.name)}</strong>
+                <div class="muted" style="font-size:.82rem">When ${esc(TRIGGER_LABEL[a.trigger_event]||a.trigger_event)} → ${esc(acts||'—')}</div>
+            </div>
+            <button class="btn-ghost" onclick="toggleAutomation(${a.id}, ${a.is_active?0:1})">${a.is_active?'Pause':'Activate'}</button>
+            <button class="btn-ghost" onclick="deleteAutomation(${a.id})">Delete</button>
+        </div>`;
+    }).join('') : `<div class="empty">No automations yet — create your first below.</div>`;
+}
+
+const aActionEl = () => document.getElementById('aAction');
+function syncAutoValueLabel() {
+    const t = aActionEl().value;
+    $('#aValueLabel').textContent = t==='add_tag' ? 'Tag' : t==='set_contact_status' ? 'Status (Lead/Customer/Inactive)' : 'Job title';
+    $('#aValue').placeholder = t==='add_tag' ? 'e.g. from-website' : t==='set_contact_status' ? 'e.g. Customer' : 'e.g. Kickoff visit';
+}
+document.getElementById('aAction').addEventListener('change', syncAutoValueLabel);
+
+window.toggleAutomation = async (id, active) => {
+    await api(`/accounts/${currentAccountId}/automations/${id}`, { method:'PUT', body: JSON.stringify({ is_active: !!active })});
+    await loadAccountView();
+};
+window.deleteAutomation = async (id) => {
+    await api(`/accounts/${currentAccountId}/automations/${id}`, { method:'DELETE' });
+    await loadAccountView();
+};
+
+document.getElementById('autoForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const type = $('#aAction').value, val = $('#aValue').value.trim();
+    const key = type==='add_tag' ? 'tag' : type==='set_contact_status' ? 'status' : 'title';
+    const config = {}; if (val) config[key] = val;
+    await api(`/accounts/${currentAccountId}/automations`, { method:'POST', body: JSON.stringify({
+        name: $('#aName').value,
+        trigger_event: $('#aTrigger').value,
+        actions: [{ type, config }],
+    })});
+    e.target.reset(); syncAutoValueLabel();
+    await loadAccountView();
+});
 
 function renderJobs(list, contacts) {
     $('#jobsCount').textContent = list.length ? `(${list.length})` : '';
