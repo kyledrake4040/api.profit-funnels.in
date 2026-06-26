@@ -11,7 +11,6 @@ use App\Models\Invoice;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -124,11 +123,7 @@ final class InvoiceController extends Controller
             return $this->errorResponse(__('Invoice not found.'), 404);
         }
 
-        if (! $invoice->isPaid()) {
-            $invoice->status  = config('custom.invoice.status_paid');
-            $invoice->paid_at = Carbon::now();
-            $invoice->save();
-        }
+        $invoice->markPaid();
 
         return $this->successResponse($invoice->load('items'), __('Invoice marked paid.'));
     }

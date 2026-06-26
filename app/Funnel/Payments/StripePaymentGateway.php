@@ -25,10 +25,17 @@ final class StripePaymentGateway implements PaymentGateway
         }
     }
 
-    public function createCheckout(string $productName, int $amountCents, string $currency, string $successUrl, string $cancelUrl): CheckoutLink
+    /**
+     * One-time (payment mode) Checkout Session.
+     *
+     * @param array<string,string|int> $metadata stamped on the session so the
+     *                                            webhook can map the payment back
+     *                                            (e.g. to an invoice).
+     */
+    public function createCheckout(string $productName, int $amountCents, string $currency, string $successUrl, string $cancelUrl, array $metadata = []): CheckoutLink
     {
         return $this->request(
-            $this->buildFields($productName, $amountCents, $currency, $successUrl, $cancelUrl),
+            $this->buildFields($productName, $amountCents, $currency, $successUrl, $cancelUrl, $metadata),
             $amountCents,
             $currency,
         );
@@ -83,9 +90,9 @@ final class StripePaymentGateway implements PaymentGateway
      *
      * @return array<string,string>
      */
-    public function buildFields(string $productName, int $amountCents, string $currency, string $successUrl, string $cancelUrl): array
+    public function buildFields(string $productName, int $amountCents, string $currency, string $successUrl, string $cancelUrl, array $metadata = []): array
     {
-        return [
+        $fields = [
             'mode' => 'payment',
             'success_url' => $successUrl,
             'cancel_url' => $cancelUrl,
@@ -94,6 +101,12 @@ final class StripePaymentGateway implements PaymentGateway
             'line_items[0][price_data][unit_amount]' => (string) $amountCents,
             'line_items[0][price_data][product_data][name]' => $productName,
         ];
+
+        foreach ($metadata as $key => $value) {
+            $fields["metadata[{$key}]"] = (string) $value;
+        }
+
+        return $fields;
     }
 
     /**

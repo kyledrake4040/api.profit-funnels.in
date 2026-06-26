@@ -337,7 +337,10 @@ function renderInvoicing(quotes, invoices, contacts) {
             <td class="muted">${esc(nm(v.contact))}</td>
             <td>${money(v.total, v.currency)}</td>
             <td><span class="pill ${esc(v.status)}">${esc(v.status)}</span></td>
-            <td>${v.status === 'Paid' ? '' : `<button class="btn-primary" onclick="payInvoice(${v.id})">Mark paid</button>`}</td>
+            <td>
+                ${v.pay_token ? `<button class="btn-ghost" onclick="copyPayLink('${v.pay_token}')">Copy pay link</button>` : ''}
+                ${v.status === 'Paid' ? '' : `<button class="btn-primary" onclick="payInvoice(${v.id})">Mark paid</button>`}
+            </td>
         </tr>`).join('') : `<tr><td colspan="5" class="empty">No invoices yet.</td></tr>`;
 
     $('#qContact').innerHTML = `<option value="">— no client —</option>` +
@@ -351,6 +354,11 @@ window.convertQuote = async (id) => {
 window.payInvoice = async (id) => {
     await api(`/accounts/${currentAccountId}/invoices/${id}/pay`, { method:'POST' });
     await loadAccountView();
+};
+window.copyPayLink = async (token) => {
+    const url = `${location.origin}/pay/${token}`;
+    try { await navigator.clipboard.writeText(url); alert('Pay link copied:\n' + url); }
+    catch (e) { prompt('Copy this pay link and send it to your client:', url); }
 };
 
 document.getElementById('quoteForm').addEventListener('submit', async e => {

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 /**
  * A client invoice, made of line items. Closes the lead → job → get-paid loop.
@@ -22,6 +23,7 @@ final class Invoice extends Model
         'contact_id',
         'quote_id',
         'number',
+        'pay_token',
         'status',
         'currency',
         'total',
@@ -29,6 +31,16 @@ final class Invoice extends Model
         'paid_at',
         'notes',
     ];
+
+    protected static function booted(): void
+    {
+        // Every invoice gets an unguessable public token for its pay link.
+        static::creating(function (Invoice $invoice) {
+            if (empty($invoice->pay_token)) {
+                $invoice->pay_token = Str::random(48);
+            }
+        });
+    }
 
     protected $casts = [
         'total'   => 'decimal:2',
@@ -61,4 +73,19 @@ final class Invoice extends Model
     {
         return $this->status === config('custom.invoice.status_paid');
     }
+
+    public function markPaid(): void
+    {
+        if (! $this->isPaid()) {
+            $this->status  = config('custom.invoice.status_paid');
+            $this->paid_at = now();
+            $this->save();
+        }
+    }
+
+    public function publicUrl(): string
+    {
+        return url('/pay/' . $this->pay_token);
+    }
 }
+
