@@ -63,7 +63,7 @@ Route::middleware('auth:api')->group(function () {
     // CRM contacts — nested under an account, gated by membership. Kept fully
     // nested (not shallow) so the {account} param is always present for the
     // account.member guard to scope and authorize against.
-    Route::middleware('account.member')->group(function () {
+    Route::middleware(['account.member', 'subscribed'])->group(function () {
         Route::get('accounts/{account}/dashboard', [DashboardController::class, 'show'])
             ->name('accounts.dashboard');
         Route::get('accounts/{account}/dashboard/insight', [DashboardController::class, 'insight'])
@@ -83,6 +83,7 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('accounts.quotes', QuoteController::class);
 
         Route::post('accounts/{account}/invoices/{invoice}/pay', [InvoiceController::class, 'pay'])->name('invoices.pay');
+        Route::post('accounts/{account}/invoices/{invoice}/email', [InvoiceController::class, 'email'])->name('invoices.email');
         Route::apiResource('accounts.invoices', InvoiceController::class);
 
         // Client micro-site (one per account).

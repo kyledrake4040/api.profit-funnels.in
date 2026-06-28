@@ -339,6 +339,7 @@ function renderInvoicing(quotes, invoices, contacts) {
             <td><span class="pill ${esc(v.status)}">${esc(v.status)}</span></td>
             <td>
                 ${v.pay_token ? `<button class="btn-ghost" onclick="copyPayLink('${v.pay_token}')">Copy pay link</button>` : ''}
+                ${v.contact?.email && v.status !== 'Paid' ? `<button class="btn-ghost" onclick="emailInvoice(${v.id})">Email client</button>` : ''}
                 ${v.status === 'Paid' ? '' : `<button class="btn-primary" onclick="payInvoice(${v.id})">Mark paid</button>`}
             </td>
         </tr>`).join('') : `<tr><td colspan="5" class="empty">No invoices yet.</td></tr>`;
@@ -354,6 +355,10 @@ window.convertQuote = async (id) => {
 window.payInvoice = async (id) => {
     await api(`/accounts/${currentAccountId}/invoices/${id}/pay`, { method:'POST' });
     await loadAccountView();
+};
+window.emailInvoice = async (id) => {
+    const res = await api(`/accounts/${currentAccountId}/invoices/${id}/email`, { method:'POST' });
+    if (res?.success) alert(res.message || 'Invoice emailed to client.');
 };
 window.copyPayLink = async (token) => {
     const url = `${location.origin}/pay/${token}`;

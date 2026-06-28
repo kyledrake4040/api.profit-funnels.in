@@ -79,6 +79,26 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | Free trial period
+    |--------------------------------------------------------------------------
+    |
+    | Number of days from registration a user can access the platform without
+    | an active subscription. Set to 0 to disable the trial entirely.
+    |
+    */
+
+    'trial_days' => (int) env('FUNNEL_TRIAL_DAYS', 8),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Skip subscription check (dev / testing)
+    |--------------------------------------------------------------------------
+    */
+
+    'skip_subscription_check' => env('FUNNEL_SKIP_SUBSCRIPTION_CHECK', false),
+
     'currency' => env('FUNNEL_SERVICE_CURRENCY', 'cad'),
 
     'plans' => [
