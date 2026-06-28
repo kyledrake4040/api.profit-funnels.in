@@ -29,6 +29,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             // Tenancy: gate routes carrying an {account} to members / agency owners.
             'account.member' => \App\Http\Middleware\EnsureAccountMember::class,
+            // Subscription gate: active subscription or within 8-day free trial.
+            'subscribed' => \App\Http\Middleware\EnsureActiveSubscription::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

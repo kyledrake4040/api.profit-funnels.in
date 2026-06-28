@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Funnel\Payments;
 
+use App\Mail\WelcomeEmail;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 /**
@@ -73,6 +75,11 @@ final class SubscriptionProvisioner
                 'password' => Hash::make(Str::random(40)),
             ],
         );
+
+        // Send a welcome email only to brand-new users so they know how to log in.
+        if ($user->wasRecentlyCreated) {
+            Mail::to($user->email)->queue(new WelcomeEmail($user));
+        }
 
         $startsAt = Carbon::now();
 

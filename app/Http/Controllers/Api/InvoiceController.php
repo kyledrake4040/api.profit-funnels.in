@@ -6,12 +6,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\InvoiceRequest;
+use App\Mail\InvoiceEmail;
 use App\Models\Account;
 use App\Models\Invoice;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * Client invoices (with line items). Closes the get-paid loop: mark an invoice
@@ -25,7 +27,7 @@ final class InvoiceController extends Controller
     {
         $invoices = $this->account($request)->invoices()
             ->when($request->query('status'), fn ($q, $s) => $q->where('status', $s))
-            ->with(['items', 'contact:id,first_name,last_name'])
+            ->with(['items', 'contact:id,first_name,last_name,email'])
             ->latest()
             ->get();
 
@@ -110,6 +112,28 @@ final class InvoiceController extends Controller
         $invoice->delete();
 
         return $this->successResponse(null, __('Invoice deleted.'));
+    }
+
+    /**
+     * Email the invoice pay link to the associated contact.
+     */
+    public function email(Request $request): JsonResponse
+    {
+        $invoice = $this->resolve($request);
+
+        if ($invoice === null) {
+            return $this->errorResponse(__('Invoice not found.'), 404);
+        }
+
+        $contact = $invoice->contact;
+
+        if ($contact === null || empty($contact->email)) {
+            return $this->errorResponse(__('This invoice has no contact with an email address.'), 422);
+        }
+
+        Mail::to($contact->email)->queue(new InvoiceEmail($invoice->load(['items', 'account.site'])));
+
+        return $this->successResponse(null, __('Invoice emailed to ' . $contact->email . '.'));
     }
 
     /**
