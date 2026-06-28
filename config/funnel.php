@@ -99,12 +99,13 @@ return [
 
     'skip_subscription_check' => env('FUNNEL_SKIP_SUBSCRIPTION_CHECK', false),
 
-    'currency' => env('FUNNEL_SERVICE_CURRENCY', 'cad'),
+    'currency' => env('FUNNEL_SERVICE_CURRENCY', 'usd'),
 
+    // $3/mo less than GoHighLevel's equivalent tiers ($97/$297/$497).
     'plans' => [
-        'starter' => 9900,
-        'pro' => 24900,
-        'done_for_you' => 49900,
+        'starter'      => 9400,   // $94/mo
+        'pro'          => 29400,  // $294/mo
+        'done_for_you' => 49400,  // $494/mo
     ],
 
 ];

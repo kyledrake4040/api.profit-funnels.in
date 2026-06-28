@@ -239,19 +239,19 @@
                 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.8rem" id="planCards">
                     <div class="plan-card" data-plan="starter">
                         <div style="font-weight:800;font-size:1rem">Starter</div>
-                        <div style="color:var(--brand);font-size:1.5rem;font-weight:800;margin:.25rem 0">CAD 99<span style="font-size:.85rem;font-weight:400;color:var(--muted)">/mo</span></div>
+                        <div style="color:var(--brand);font-size:1.5rem;font-weight:800;margin:.25rem 0">$94<span style="font-size:.85rem;font-weight:400;color:var(--muted)"> USD/mo</span></div>
                         <div class="muted" style="font-size:.82rem;margin-bottom:.8rem">Full CRM + attribution dashboard</div>
                         <a class="btn-primary" style="display:block;text-align:center;text-decoration:none;padding:.55rem 1rem;border-radius:.5rem;font-weight:700" href="/checkout/starter">Choose Starter</a>
                     </div>
                     <div class="plan-card" data-plan="pro">
                         <div style="font-weight:800;font-size:1rem">Pro <span style="color:var(--brand);font-size:.75rem">POPULAR</span></div>
-                        <div style="color:var(--brand);font-size:1.5rem;font-weight:800;margin:.25rem 0">CAD 249<span style="font-size:.85rem;font-weight:400;color:var(--muted)">/mo</span></div>
+                        <div style="color:var(--brand);font-size:1.5rem;font-weight:800;margin:.25rem 0">$294<span style="font-size:.85rem;font-weight:400;color:var(--muted)"> USD/mo</span></div>
                         <div class="muted" style="font-size:.82rem;margin-bottom:.8rem">+ QuickBooks sync + multi-account</div>
                         <a class="btn-primary" style="display:block;text-align:center;text-decoration:none;padding:.55rem 1rem;border-radius:.5rem;font-weight:700" href="/checkout/pro">Choose Pro</a>
                     </div>
                     <div class="plan-card" data-plan="done_for_you">
                         <div style="font-weight:800;font-size:1rem">Done-for-you</div>
-                        <div style="color:var(--brand);font-size:1.5rem;font-weight:800;margin:.25rem 0">CAD 499<span style="font-size:.85rem;font-weight:400;color:var(--muted)">/mo</span></div>
+                        <div style="color:var(--brand);font-size:1.5rem;font-weight:800;margin:.25rem 0">$494<span style="font-size:.85rem;font-weight:400;color:var(--muted)"> USD/mo</span></div>
                         <div class="muted" style="font-size:.82rem;margin-bottom:.8rem">We set up &amp; manage everything</div>
                         <a class="btn-primary" style="display:block;text-align:center;text-decoration:none;padding:.55rem 1rem;border-radius:.5rem;font-weight:700" href="/checkout/done_for_you">Get Started</a>
                     </div>

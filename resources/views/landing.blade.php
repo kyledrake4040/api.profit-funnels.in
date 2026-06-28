@@ -213,7 +213,7 @@
 <section id="pricing">
     <div class="wrap">
         <h2>Simple, honest pricing</h2>
-        <p class="lead">All prices in CAD. Cancel anytime. Every plan includes the attribution
+        <p class="lead">All prices in USD. Cancel anytime. Every plan includes the attribution
             dashboard and your data export.</p>
         <p class="lead" style="font-weight:800;color:var(--brand);font-size:1.15rem;">
             🎉 Start with <strong>8 days free</strong> — then <strong>50% off your first 3 months</strong>
@@ -228,7 +228,7 @@
         <div class="pricing">
             <div class="tier">
                 <div class="name">Starter</div>
-                <div class="price">$99<span>/mo</span></div>
+                <div class="price">$94<span>/mo</span></div>
                 <ul>
                     <li>Attribution dashboard</li>
                     <li>GoHighLevel + QuickBooks hookup</li>
@@ -239,7 +239,7 @@
             </div>
             <div class="tier feature">
                 <div class="name">Pro · most popular</div>
-                <div class="price">$249<span>/mo</span></div>
+                <div class="price">$294<span>/mo</span></div>
                 <ul>
                     <li>Everything in Starter</li>
                     <li>Automated content scheduling</li>
@@ -250,7 +250,7 @@
             </div>
             <div class="tier">
                 <div class="name">Done-for-you</div>
-                <div class="price">$499<span>/mo</span></div>
+                <div class="price">$494<span>/mo</span></div>
                 <ul>
                     <li>Everything in Pro</li>
                     <li>We run it end to end</li>
@@ -334,9 +334,9 @@
                     <label for="plan">Plan you're interested in</label>
                     <select id="plan" name="plan">
                         <option value="">Not sure yet</option>
-                        <option value="starter" @selected(old('plan')==='starter')>Starter — $99/mo</option>
-                        <option value="pro" @selected(old('plan')==='pro')>Pro — $249/mo</option>
-                        <option value="done_for_you" @selected(old('plan')==='done_for_you')>Done-for-you — $499/mo</option>
+                        <option value="starter" @selected(old('plan')==='starter')>Starter — $94/mo</option>
+                        <option value="pro" @selected(old('plan')==='pro')>Pro — $294/mo</option>
+                        <option value="done_for_you" @selected(old('plan')==='done_for_you')>Done-for-you — $494/mo</option>
                     </select>
                 </div>
                 <button type="submit" class="btn btn-primary" style="width:100%">Start my 8-day free trial →</button>
