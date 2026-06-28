@@ -100,4 +100,15 @@ class CrmConsoleTest extends TestCase
             ->assertSee('/dashboard/insight')
             ->assertSee('getInsight');
     }
+
+    public function test_console_includes_the_billing_plan_section(): void
+    {
+        $this->get('/app')
+            ->assertOk()
+            ->assertSee('Billing &amp; plan', false)
+            ->assertSee('/subscriptions')
+            ->assertSee('loadBilling')
+            ->assertSee('/checkout/starter')
+            ->assertSee('/checkout/pro');
+    }
 }

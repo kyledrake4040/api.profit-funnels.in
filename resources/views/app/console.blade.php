@@ -81,6 +81,13 @@
         .deal .dm button { padding:.15rem .5rem; font-size:.8rem; }
         .deal.Won { border-color:var(--brand); } .deal.Lost { border-color:var(--danger); opacity:.7; }
         .col .empty { font-size:.8rem; }
+
+        /* Plan cards */
+        .plan-card { background:#0e1626; border:1px solid var(--line); border-radius:.8rem;
+            padding:1rem 1.1rem; transition:border-color .15s; }
+        .plan-card:hover { border-color:var(--brand); }
+        .plan-card.active { border-color:var(--brand); }
+        .plan-card.active a.btn-primary { background:var(--line); color:var(--muted); pointer-events:none; }
     </style>
 </head>
 <body>
@@ -227,6 +234,31 @@
             </section>
 
             <section class="block">
+                <h2>Billing &amp; plan</h2>
+                <div id="billingStatus" class="muted" style="font-size:.88rem;margin-bottom:1rem">Loading…</div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.8rem" id="planCards">
+                    <div class="plan-card" data-plan="starter">
+                        <div style="font-weight:800;font-size:1rem">Starter</div>
+                        <div style="color:var(--brand);font-size:1.5rem;font-weight:800;margin:.25rem 0">CAD 99<span style="font-size:.85rem;font-weight:400;color:var(--muted)">/mo</span></div>
+                        <div class="muted" style="font-size:.82rem;margin-bottom:.8rem">Full CRM + attribution dashboard</div>
+                        <a class="btn-primary" style="display:block;text-align:center;text-decoration:none;padding:.55rem 1rem;border-radius:.5rem;font-weight:700" href="/checkout/starter">Choose Starter</a>
+                    </div>
+                    <div class="plan-card" data-plan="pro">
+                        <div style="font-weight:800;font-size:1rem">Pro <span style="color:var(--brand);font-size:.75rem">POPULAR</span></div>
+                        <div style="color:var(--brand);font-size:1.5rem;font-weight:800;margin:.25rem 0">CAD 249<span style="font-size:.85rem;font-weight:400;color:var(--muted)">/mo</span></div>
+                        <div class="muted" style="font-size:.82rem;margin-bottom:.8rem">+ QuickBooks sync + multi-account</div>
+                        <a class="btn-primary" style="display:block;text-align:center;text-decoration:none;padding:.55rem 1rem;border-radius:.5rem;font-weight:700" href="/checkout/pro">Choose Pro</a>
+                    </div>
+                    <div class="plan-card" data-plan="done_for_you">
+                        <div style="font-weight:800;font-size:1rem">Done-for-you</div>
+                        <div style="color:var(--brand);font-size:1.5rem;font-weight:800;margin:.25rem 0">CAD 499<span style="font-size:.85rem;font-weight:400;color:var(--muted)">/mo</span></div>
+                        <div class="muted" style="font-size:.82rem;margin-bottom:.8rem">We set up &amp; manage everything</div>
+                        <a class="btn-primary" style="display:block;text-align:center;text-decoration:none;padding:.55rem 1rem;border-radius:.5rem;font-weight:700" href="/checkout/done_for_you">Get Started</a>
+                    </div>
+                </div>
+            </section>
+
+            <section class="block">
                 <h2>Account settings</h2>
                 <p class="muted" style="margin:0 0 .8rem;font-size:.85rem">
                     Business details used in invoices, quote acceptance pages, and your public micro-site.
@@ -272,6 +304,7 @@ const API = '/api';
 let token = localStorage.getItem('pp_token');
 let accounts = [];
 let currentAccountId = null;
+let currentUser = null;
 let pipelines = [];
 let boardPipelineId = null;
 
@@ -313,8 +346,8 @@ $('#logoutBtn').addEventListener('click', logout);
 
 /* ---- Boot ---- */
 async function boot() {
-    const me = await api('/auth/me');
-    $('#who').textContent = me.email || me.name || '';
+    currentUser = await api('/auth/me');
+    $('#who').textContent = currentUser.email || currentUser.name || '';
     $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
     await loadAccounts();
 }
@@ -355,6 +388,7 @@ async function loadAccountView() {
     setupBoard();
     await renderBoard();
     loadSettings();
+    loadBilling();
 }
 
 function renderInvoicing(quotes, invoices, contacts) {
@@ -803,6 +837,51 @@ function timeAgo(iso) {
     if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
     if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
     return Math.floor(diff / 86400) + 'd ago';
+}
+
+/* ---- Billing & plan ---- */
+async function loadBilling() {
+    const statusEl = document.getElementById('billingStatus');
+    const cards = document.querySelectorAll('#planCards .plan-card');
+    cards.forEach(c => c.classList.remove('active'));
+
+    try {
+        const subs = await api('/subscriptions');
+        const active = Array.isArray(subs) ? subs.find(s => s.status === 'active' || s.status === 'trialing') : null;
+
+        if (active) {
+            const planName = active.plan_name ?? active.plan ?? 'Current plan';
+            const renewsAt = active.current_period_end
+                ? new Date(active.current_period_end * 1000).toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' })
+                : null;
+            statusEl.innerHTML = `<span style="color:var(--brand);font-weight:700">Active · ${esc(planName)}</span>`
+                + (renewsAt ? ` <span class="muted">— renews ${renewsAt}</span>` : '');
+            const planKey = (active.plan ?? '').replace(/-/g, '_');
+            cards.forEach(c => {
+                if (c.dataset.plan === planKey) {
+                    c.classList.add('active');
+                    const btn = c.querySelector('a.btn-primary');
+                    if (btn) btn.textContent = 'Current plan';
+                }
+            });
+        } else {
+            // No active subscription — show trial status based on account creation date
+            const TRIAL_DAYS = 8;
+            const created = currentUser?.created_at ? new Date(currentUser.created_at) : null;
+            const daysSince = created ? Math.floor((Date.now() - created) / 86400000) : TRIAL_DAYS;
+            const daysLeft = Math.max(0, TRIAL_DAYS - daysSince);
+
+            if (daysLeft > 0) {
+                statusEl.innerHTML = `<span style="color:#fbbf24;font-weight:700">Free trial</span>`
+                    + ` <span class="muted">— ${daysLeft} day${daysLeft === 1 ? '' : 's'} remaining. Choose a plan to keep access.</span>`;
+            } else {
+                statusEl.innerHTML = `<span style="color:var(--danger);font-weight:700">Trial expired.</span>`
+                    + ` <span class="muted">Subscribe below to restore full access.</span>`;
+            }
+        }
+    } catch (_) {
+        statusEl.textContent = 'Could not load billing status.';
+    }
 }
 </script>
 
