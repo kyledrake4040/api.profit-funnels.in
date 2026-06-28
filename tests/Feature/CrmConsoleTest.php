@@ -59,6 +59,7 @@ class CrmConsoleTest extends TestCase
             ->assertSee('Quotes &amp; Invoices', false)
             ->assertSee('/quotes')
             ->assertSee('convertQuote')
+            ->assertSee('copyAcceptLink')
             ->assertSee('payInvoice')
             ->assertSee('copyPayLink')
             ->assertSee('emailInvoice');

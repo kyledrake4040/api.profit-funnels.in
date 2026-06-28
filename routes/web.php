@@ -47,6 +47,14 @@ Route::get('/pay/{token}/checkout', [\App\Http\Controllers\InvoicePaymentControl
     ->name('pay.checkout');
 Route::get('/pay/{token}/success', [\App\Http\Controllers\InvoicePaymentController::class, 'success'])->name('pay.success');
 
+// Public quote acceptance: a business shares /quote/{token}; the client reviews the
+// quote and clicks Accept. No login required.
+Route::get('/quote/{token}', [\App\Http\Controllers\QuoteAcceptanceController::class, 'show'])->name('quote.show');
+Route::post('/quote/{token}/accept', [\App\Http\Controllers\QuoteAcceptanceController::class, 'accept'])
+    ->middleware('throttle:10,1')
+    ->name('quote.accept');
+Route::get('/quote/{token}/success', [\App\Http\Controllers\QuoteAcceptanceController::class, 'success'])->name('quote.success');
+
 // Public client micro-sites: a published business site + lead form that drops
 // enquiries into that account's CRM. Lead posts are rate-limited.
 Route::get('/s/{slug}', [\App\Http\Controllers\SitePublicController::class, 'show'])->name('site.public');

@@ -328,7 +328,10 @@ function renderInvoicing(quotes, invoices, contacts) {
             <td class="muted">${esc(nm(q.contact))}</td>
             <td>${money(q.total, q.currency)}</td>
             <td><span class="pill ${esc(q.status)}">${esc(q.status)}</span></td>
-            <td>${q.status === 'Accepted' ? '' : `<button class="btn-ghost" onclick="convertQuote(${q.id})">→ Invoice</button>`}</td>
+            <td>
+                ${q.accept_token && q.status !== 'Accepted' && q.status !== 'Declined' ? `<button class="btn-ghost" onclick="copyAcceptLink('${q.accept_token}')">Copy accept link</button>` : ''}
+                ${q.status !== 'Accepted' ? `<button class="btn-ghost" onclick="convertQuote(${q.id})">→ Invoice</button>` : ''}
+            </td>
         </tr>`).join('') : `<tr><td colspan="5" class="empty">No quotes yet.</td></tr>`;
 
     $('#invoicesBody').innerHTML = invoices.length ? invoices.map(v => `
@@ -364,6 +367,11 @@ window.copyPayLink = async (token) => {
     const url = `${location.origin}/pay/${token}`;
     try { await navigator.clipboard.writeText(url); alert('Pay link copied:\n' + url); }
     catch (e) { prompt('Copy this pay link and send it to your client:', url); }
+};
+window.copyAcceptLink = async (token) => {
+    const url = `${location.origin}/quote/${token}`;
+    try { await navigator.clipboard.writeText(url); alert('Accept link copied:\n' + url); }
+    catch (e) { prompt('Copy this accept link and send it to your client:', url); }
 };
 
 document.getElementById('quoteForm').addEventListener('submit', async e => {
