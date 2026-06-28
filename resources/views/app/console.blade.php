@@ -225,6 +225,44 @@
                     <div style="flex:0"><button class="btn-primary" type="submit">Add deal</button></div>
                 </form>
             </section>
+
+            <section class="block">
+                <h2>Account settings</h2>
+                <p class="muted" style="margin:0 0 .8rem;font-size:.85rem">
+                    Business details used in invoices, quote acceptance pages, and your public micro-site.
+                    <span id="siteLink" style="display:none"> · <a id="siteLinkAnchor" href="#" target="_blank">View public site ↗</a></span>
+                </p>
+                <form id="settingsForm">
+                    <div class="inline-form" style="margin-top:0">
+                        <div><label>Business name</label><input id="sBizName" placeholder="e.g. Gulf Coast Painting"></div>
+                        <div><label>City / region</label><input id="sCity" placeholder="e.g. Charlottetown, PEI"></div>
+                    </div>
+                    <div style="margin-top:.6rem">
+                        <label>Headline</label><input id="sHeadline" placeholder="One-line value prop shown on your public site">
+                    </div>
+                    <div style="margin-top:.6rem">
+                        <label>About</label>
+                        <textarea id="sAbout" rows="3" placeholder="A short description of your business…"
+                            style="width:100%;font:inherit;resize:vertical;padding:.55rem .7rem;border-radius:.5rem;border:1px solid var(--line);background:#0e1626;color:var(--ink)"></textarea>
+                    </div>
+                    <div class="inline-form" style="margin-top:.2rem">
+                        <div><label>Phone</label><input id="sPhone" placeholder="e.g. +1 902-555-0100"></div>
+                        <div><label>Public email</label><input id="sEmail" type="email" placeholder="e.g. hello@yourbiz.com"></div>
+                    </div>
+                    <div style="margin-top:.6rem">
+                        <label>Services (comma-separated)</label>
+                        <input id="sServices" placeholder="e.g. Exterior painting, Interior painting, Deck staining">
+                    </div>
+                    <div style="margin-top:.8rem;display:flex;align-items:center;gap:.6rem">
+                        <input type="checkbox" id="sPublished" style="width:auto;accent-color:var(--brand)">
+                        <label for="sPublished" style="margin:0;font-size:.9rem;color:var(--ink);font-weight:400;cursor:pointer">Publish public micro-site (clients can find and contact you)</label>
+                    </div>
+                    <div style="margin-top:1rem;display:flex;align-items:center;gap:.8rem">
+                        <button class="btn-primary" type="submit">Save settings</button>
+                        <span id="settingsSaved" class="muted" style="font-size:.85rem;display:none">Saved ✓</span>
+                    </div>
+                </form>
+            </section>
         </div>
     </main>
 </div>
@@ -316,6 +354,7 @@ async function loadAccountView() {
     renderAutomations(autos);
     setupBoard();
     await renderBoard();
+    loadSettings();
 }
 
 function renderInvoicing(quotes, invoices, contacts) {
@@ -660,6 +699,45 @@ $('#newAccountBtn').addEventListener('click', async () => {
 
 /* ---- Start ---- */
 if (token) { boot().catch(() => logout()); }
+
+/* ---- Account settings ---- */
+async function loadSettings() {
+    try {
+        const site = await api(`/accounts/${currentAccountId}/site`);
+        $('#sBizName').value  = site?.business_name ?? '';
+        $('#sCity').value     = site?.city ?? '';
+        $('#sHeadline').value = site?.headline ?? '';
+        $('#sAbout').value    = site?.about ?? '';
+        $('#sPhone').value    = site?.phone ?? '';
+        $('#sEmail').value    = site?.email ?? '';
+        $('#sServices').value = (site?.services ?? []).join(', ');
+        $('#sPublished').checked = !!site?.published;
+        if (site?.slug) {
+            $('#siteLinkAnchor').href = '/s/' + site.slug;
+            $('#siteLink').style.display = site.published ? '' : 'none';
+        }
+    } catch (_) { /* settings load is best-effort */ }
+}
+
+$('#settingsForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    $('#settingsSaved').style.display = 'none';
+    try {
+        const services = $('#sServices').value.split(',').map(s => s.trim()).filter(Boolean);
+        await api(`/accounts/${currentAccountId}/site`, { method:'PUT', body: JSON.stringify({
+            business_name: $('#sBizName').value,
+            city:          $('#sCity').value,
+            headline:      $('#sHeadline').value,
+            about:         $('#sAbout').value,
+            phone:         $('#sPhone').value,
+            email:         $('#sEmail').value,
+            services,
+            published:     $('#sPublished').checked,
+        })});
+        $('#settingsSaved').style.display = '';
+        await loadSettings();
+    } catch (err) { alert('Could not save settings: ' + err.message); }
+});
 
 /* ---- Contact notes modal ---- */
 let _notesContactId = null;

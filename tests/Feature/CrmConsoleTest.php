@@ -74,6 +74,15 @@ class CrmConsoleTest extends TestCase
             ->assertSee('deleteNote');
     }
 
+    public function test_console_includes_account_settings(): void
+    {
+        $this->get('/app')
+            ->assertOk()
+            ->assertSee('Account settings')
+            ->assertSee('/site')
+            ->assertSee('loadSettings');
+    }
+
     public function test_console_includes_the_ai_reply_action(): void
     {
         $this->get('/app')
