@@ -65,6 +65,15 @@ class CrmConsoleTest extends TestCase
             ->assertSee('emailInvoice');
     }
 
+    public function test_console_includes_contact_notes(): void
+    {
+        $this->get('/app')
+            ->assertOk()
+            ->assertSee('showNotes')
+            ->assertSee('/notes')
+            ->assertSee('deleteNote');
+    }
+
     public function test_console_includes_the_ai_reply_action(): void
     {
         $this->get('/app')

@@ -503,7 +503,10 @@ function renderContacts(list) {
             <td class="muted">${esc(c.email) || '—'}</td>
             <td class="muted">${esc(c.company) || '—'}</td>
             <td><span class="pill ${esc(c.status)}">${esc(c.status)}</span></td>
-            <td><button class="btn-ghost" onclick="aiReply(${c.id})">✨ AI reply</button></td>
+            <td>
+                <button class="btn-ghost" onclick="showNotes(${c.id},'${esc(c.first_name)} ${esc(c.last_name||'')}')">Notes</button>
+                <button class="btn-ghost" onclick="aiReply(${c.id})">✨ AI reply</button>
+            </td>
         </tr>`).join('') : `<tr><td colspan="5" class="empty">No contacts yet — add your first below.</td></tr>`;
 }
 
@@ -657,6 +660,88 @@ $('#newAccountBtn').addEventListener('click', async () => {
 
 /* ---- Start ---- */
 if (token) { boot().catch(() => logout()); }
+
+/* ---- Contact notes modal ---- */
+let _notesContactId = null;
+
+window.showNotes = async (contactId, name) => {
+    _notesContactId = contactId;
+    document.getElementById('notesContactName').textContent = name + ' — Notes';
+    document.getElementById('notesInput').value = '';
+    document.getElementById('notesModal').classList.remove('hidden');
+    await refreshNotes();
+};
+
+window.closeNotesModal = () => {
+    document.getElementById('notesModal').classList.add('hidden');
+    _notesContactId = null;
+};
+
+async function refreshNotes() {
+    const list = document.getElementById('notesList');
+    list.innerHTML = '<div class="muted" style="padding:.6rem 0">Loading…</div>';
+    try {
+        const res = await api(`/accounts/${currentAccountId}/contacts/${_notesContactId}/notes`);
+        const notes = res?.data ?? [];
+        if (!notes.length) {
+            list.innerHTML = '<div class="muted" style="padding:.6rem 0;font-size:.88rem">No notes yet — add the first one below.</div>';
+            return;
+        }
+        list.innerHTML = notes.map(n => {
+            const ago = timeAgo(n.created_at);
+            const who = n.user?.name ? ` · ${n.user.name}` : '';
+            return `<div style="padding:.6rem 0;border-bottom:1px solid var(--line)">
+                <div style="font-size:.88rem;line-height:1.5;white-space:pre-wrap">${esc(n.body)}</div>
+                <div style="font-size:.75rem;color:var(--muted);margin-top:.25rem;display:flex;justify-content:space-between;align-items:center">
+                    <span>${ago}${who}</span>
+                    <button class="btn-ghost" style="padding:.2rem .5rem;font-size:.75rem" onclick="deleteNote(${n.id})">✕</button>
+                </div>
+            </div>`;
+        }).join('');
+    } catch (e) {
+        list.innerHTML = '<div class="muted">Could not load notes.</div>';
+    }
+}
+
+window.deleteNote = async (noteId) => {
+    await api(`/accounts/${currentAccountId}/contacts/${_notesContactId}/notes/${noteId}`, { method:'DELETE' });
+    await refreshNotes();
+};
+
+document.getElementById('notesForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const body = document.getElementById('notesInput').value.trim();
+    if (!body) return;
+    await api(`/accounts/${currentAccountId}/contacts/${_notesContactId}/notes`, {
+        method: 'POST', body: JSON.stringify({ body }),
+    });
+    document.getElementById('notesInput').value = '';
+    await refreshNotes();
+});
+
+function timeAgo(iso) {
+    const diff = Math.floor((Date.now() - new Date(iso)) / 1000);
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    return Math.floor(diff / 86400) + 'd ago';
+}
 </script>
+
+<!-- Contact notes modal -->
+<div id="notesModal" class="hidden" style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);padding:1rem">
+    <div style="width:100%;max-width:500px;background:var(--panel);border:1px solid var(--line);border-radius:1rem;overflow:hidden;display:flex;flex-direction:column;max-height:90vh">
+        <div style="padding:1rem 1.2rem;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between">
+            <strong id="notesContactName"></strong>
+            <button class="btn-ghost" style="padding:.3rem .6rem" onclick="closeNotesModal()">✕</button>
+        </div>
+        <div id="notesList" style="flex:1;overflow-y:auto;padding:0 1.2rem"></div>
+        <form id="notesForm" style="padding:1rem 1.2rem;border-top:1px solid var(--line)">
+            <textarea id="notesInput" rows="3" placeholder="Add a note…"
+                style="width:100%;font:inherit;resize:vertical;padding:.55rem .7rem;border-radius:.5rem;border:1px solid var(--line);background:#0e1626;color:var(--ink);margin-bottom:.5rem"></textarea>
+            <button class="btn-primary" type="submit" style="width:100%">Add note</button>
+        </form>
+    </div>
+</div>
 </body>
 </html>
