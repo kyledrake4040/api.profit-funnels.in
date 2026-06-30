@@ -171,4 +171,96 @@ class StripeWebhookTest extends TestCase
 
         $this->assertDatabaseCount('subscriptions', 0);
     }
+
+    // -------------------------------------------------------------------------
+    // Subscription lifecycle
+    // -------------------------------------------------------------------------
+
+    private function subscriptionUpdatedEvent(string $id, string $stripeSubId, string $stripeStatus, int $periodEnd): array
+    {
+        return [
+            'id'   => $id,
+            'type' => 'customer.subscription.updated',
+            'data' => ['object' => [
+                'id'                  => $stripeSubId,
+                'status'              => $stripeStatus,
+                'current_period_end'  => $periodEnd,
+            ]],
+        ];
+    }
+
+    private function subscriptionDeletedEvent(string $id, string $stripeSubId): array
+    {
+        return [
+            'id'   => $id,
+            'type' => 'customer.subscription.deleted',
+            'data' => ['object' => [
+                'id'     => $stripeSubId,
+                'status' => 'canceled',
+            ]],
+        ];
+    }
+
+    public function test_subscription_updated_event_extends_renewal_date(): void
+    {
+        Queue::fake();
+        $this->seed(PlanSeeder::class);
+
+        // First, provision a subscription via checkout.
+        $this->send($this->subscriptionCheckoutEvent('evt_provision'))->assertOk();
+
+        // Stripe fires an update with a new period end (simulate a renewal).
+        $newPeriodEnd = now()->addMonth()->addDay()->timestamp;
+        $this->send($this->subscriptionUpdatedEvent('evt_renewal', 'sub_123', 'active', $newPeriodEnd))->assertOk();
+
+        $this->assertDatabaseHas('subscriptions', [
+            'gateway_reference' => 'sub_123',
+            'status'            => 'Active',
+        ]);
+
+        $sub = \App\Models\Subscription::where('gateway_reference', 'sub_123')->first();
+        $this->assertEqualsWithDelta($newPeriodEnd, $sub->ends_at->timestamp, 1);
+    }
+
+    public function test_subscription_updated_to_past_due_marks_status(): void
+    {
+        Queue::fake();
+        $this->seed(PlanSeeder::class);
+
+        $this->send($this->subscriptionCheckoutEvent('evt_provision2'))->assertOk();
+
+        $this->send($this->subscriptionUpdatedEvent('evt_pastdue', 'sub_123', 'past_due', now()->timestamp))->assertOk();
+
+        $this->assertDatabaseHas('subscriptions', [
+            'gateway_reference' => 'sub_123',
+            'status'            => 'Past Due',
+        ]);
+    }
+
+    public function test_subscription_deleted_event_cancels_subscription(): void
+    {
+        Queue::fake();
+        $this->seed(PlanSeeder::class);
+
+        $this->send($this->subscriptionCheckoutEvent('evt_provision3'))->assertOk();
+
+        $this->send($this->subscriptionDeletedEvent('evt_cancel', 'sub_123'))->assertOk();
+
+        $this->assertDatabaseHas('subscriptions', [
+            'gateway_reference' => 'sub_123',
+            'status'            => 'Cancelled',
+        ]);
+
+        $sub = \App\Models\Subscription::where('gateway_reference', 'sub_123')->first();
+        $this->assertNotNull($sub->cancelled_at);
+    }
+
+    public function test_lifecycle_event_for_unknown_subscription_is_silently_ignored(): void
+    {
+        Queue::fake();
+
+        $this->send($this->subscriptionDeletedEvent('evt_ghost', 'sub_unknown'))->assertOk();
+
+        $this->assertDatabaseCount('subscriptions', 0);
+    }
 }

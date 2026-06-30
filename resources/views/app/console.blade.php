@@ -847,16 +847,17 @@ async function loadBilling() {
 
     try {
         const subs = await api('/subscriptions');
-        const active = Array.isArray(subs) ? subs.find(s => s.status === 'active' || s.status === 'trialing') : null;
+        const active = Array.isArray(subs) ? subs.find(s => s.status === 'Active') : null;
 
         if (active) {
-            const planName = active.plan_name ?? active.plan ?? 'Current plan';
-            const renewsAt = active.current_period_end
-                ? new Date(active.current_period_end * 1000).toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' })
+            const planName = active.plan?.name ?? 'Current plan';
+            const renewsAt = active.ends_at
+                ? new Date(active.ends_at).toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' })
                 : null;
             statusEl.innerHTML = `<span style="color:var(--brand);font-weight:700">Active · ${esc(planName)}</span>`
                 + (renewsAt ? ` <span class="muted">— renews ${renewsAt}</span>` : '');
-            const planKey = (active.plan ?? '').replace(/-/g, '_');
+            // Plan slugs in DB use hyphens (done-for-you); card data-plan uses underscores
+            const planKey = (active.plan?.slug ?? '').replace(/-/g, '_');
             cards.forEach(c => {
                 if (c.dataset.plan === planKey) {
                     c.classList.add('active');
