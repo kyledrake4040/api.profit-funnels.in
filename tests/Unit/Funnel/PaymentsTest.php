@@ -62,12 +62,12 @@ final class PaymentsTest extends TestCase
     public function test_stripe_build_subscription_fields_are_well_formed(): void
     {
         $gateway = new StripePaymentGateway('sk_test_abc');
-        $fields = $gateway->buildSubscriptionFields('ProfitProof Pro', 24900, 'usd', 'month', 'https://x/ok', 'https://x/no');
+        $fields = $gateway->buildSubscriptionFields('Maritime Geo Pro', 24900, 'usd', 'month', 'https://x/ok', 'https://x/no');
 
         self::assertSame('subscription', $fields['mode']);
         self::assertSame('24900', $fields['line_items[0][price_data][unit_amount]']);
         self::assertSame('month', $fields['line_items[0][price_data][recurring][interval]']);
-        self::assertSame('ProfitProof Pro', $fields['line_items[0][price_data][product_data][name]']);
+        self::assertSame('Maritime Geo Pro', $fields['line_items[0][price_data][product_data][name]']);
     }
 
     public function test_stripe_create_subscription_checkout_parses_session_url(): void
@@ -78,7 +78,7 @@ final class PaymentsTest extends TestCase
         ];
 
         $link = (new StripePaymentGateway('sk_test_abc', $transport))
-            ->createSubscriptionCheckout('ProfitProof Pro', 24900, 'usd', 'month', 'https://x/ok', 'https://x/no');
+            ->createSubscriptionCheckout('Maritime Geo Pro', 24900, 'usd', 'month', 'https://x/ok', 'https://x/no');
 
         self::assertSame('cs_sub_1', $link->id);
         self::assertSame(24900, $link->amountCents);
@@ -87,7 +87,7 @@ final class PaymentsTest extends TestCase
     public function test_stripe_subscription_metadata_is_stamped_on_session_and_subscription(): void
     {
         $fields = (new StripePaymentGateway('sk_test_abc'))
-            ->buildSubscriptionFields('ProfitProof Starter', 9900, 'usd', 'month', 'https://x/ok', 'https://x/no', ['plan' => 'starter']);
+            ->buildSubscriptionFields('Maritime Geo Starter', 9900, 'usd', 'month', 'https://x/ok', 'https://x/no', ['plan' => 'starter']);
 
         self::assertSame('starter', $fields['metadata[plan]']);
         self::assertSame('starter', $fields['subscription_data[metadata][plan]']);
@@ -96,7 +96,7 @@ final class PaymentsTest extends TestCase
     public function test_stripe_subscription_fields_omit_metadata_when_none_given(): void
     {
         $fields = (new StripePaymentGateway('sk_test_abc'))
-            ->buildSubscriptionFields('ProfitProof Starter', 9900, 'usd', 'month', 'https://x/ok', 'https://x/no');
+            ->buildSubscriptionFields('Maritime Geo Starter', 9900, 'usd', 'month', 'https://x/ok', 'https://x/no');
 
         self::assertArrayNotHasKey('metadata[plan]', $fields);
     }

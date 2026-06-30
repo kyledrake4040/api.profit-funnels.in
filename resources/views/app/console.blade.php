@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ProfitProof — CRM Console</title>
+    <title>Maritime Geo — CRM Console</title>
     <style>
         :root {
             --bg:#0b1220; --panel:#131c2e; --line:#243049; --ink:#e7edf7;

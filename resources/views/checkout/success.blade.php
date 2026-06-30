@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Welcome aboard — ProfitProof</title>
+    <title>Welcome aboard — Maritime Geo</title>
     <style>
         body { margin: 0; min-height: 100vh; display: grid; place-items: center;
             background: #0b1220; color: #e7edf7;
@@ -22,7 +22,7 @@
 <body>
 <div class="card">
     <div class="check">✓</div>
-    <h1>You're in. Welcome to ProfitProof.</h1>
+    <h1>You're in. Welcome to Maritime Geo.</h1>
     <p>Your subscription is active. We'll email you within one business day to connect your
         GoHighLevel and QuickBooks and switch on your dashboard.</p>
     <a class="btn" href="/">Back to home</a>

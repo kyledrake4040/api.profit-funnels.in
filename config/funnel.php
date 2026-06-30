@@ -74,7 +74,7 @@ return [
     | Service plans (Stripe checkout)
     |--------------------------------------------------------------------------
     |
-    | Monthly price (in cents) for each ProfitProof plan the pricing buttons
+    | Monthly price (in cents) for each Maritime Geo plan the pricing buttons
     | sell. Checkout uses Stripe subscription mode; requires STRIPE_SECRET.
     |
     */

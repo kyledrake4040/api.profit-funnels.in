@@ -26,6 +26,6 @@ class CheckoutControllerTest extends TestCase
     {
         $this->get('/checkout-success')
             ->assertOk()
-            ->assertSee('ProfitProof');
+            ->assertSee('Maritime Geo');
     }
 }

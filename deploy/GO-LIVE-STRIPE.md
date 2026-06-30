@@ -1,4 +1,4 @@
-# Go Live: charging for ProfitProof with Stripe
+# Go Live: charging for Maritime Geo with Stripe
 
 This is the checklist to turn the funnel from "plumbing built" into "money in the
 bank." The code is already wired — a paid checkout provisions a `User` + active

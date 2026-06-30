@@ -43,7 +43,7 @@ final class EnsureActiveSubscription
         }
 
         return response()->json([
-            'message' => 'Your free trial has ended. Please subscribe to continue using ProfitProof.',
+            'message' => 'Your free trial has ended. Please subscribe to continue using Maritime Geo.',
             'subscribe_url' => url('/#pricing'),
         ], 402);
     }

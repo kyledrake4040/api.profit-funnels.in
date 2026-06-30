@@ -17,7 +17,7 @@ use Illuminate\Support\Str;
  * Turns a completed Stripe subscription checkout into a first-class account:
  * finds (or creates) the paying customer and records an active Subscription.
  *
- * This is the bridge between the public ProfitProof checkout (which only knows
+ * This is the bridge between the public Maritime Geo checkout (which only knows
  * Stripe) and the SaaS API layer (User → Subscription → Plan). It is invoked
  * from the Stripe webhook so provisioning happens the moment payment clears.
  */

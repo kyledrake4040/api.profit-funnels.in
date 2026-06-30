@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 /**
- * Public sales site for the productized attribution service ("ProfitProof").
+ * Public sales site for the productized attribution service ("Maritime Geo").
  *
  * Captured leads are recorded into the SAME attribution engine the product
  * sells, so the service tracks its own sales funnel and the dashboard doubles
@@ -52,7 +52,7 @@ final class LandingController extends Controller
             'utm_source' => $data['utm_source'] ?? '' ?: 'website',
             'utm_medium' => $data['utm_medium'] ?? '',
             'utm_campaign' => $data['utm_campaign'] ?? ($data['plan'] ?? ''),
-            'platform' => 'profitproof',
+            'platform' => 'maritimegeo',
             'contact_id' => $data['email'],
             'name' => $data['name'],
         ];

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Welcome to ProfitProof</title>
+<title>Welcome to Maritime Geo</title>
 </head>
 <body style="margin:0;padding:0;background:#f4f6f9;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:16px;line-height:1.6;color:#1a2236;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f9;padding:40px 20px;">
@@ -9,13 +9,13 @@
     <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #dde3ef;">
       <!-- Header -->
       <tr><td style="background:#131c2e;padding:28px 40px;">
-        <div style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-.02em;">ProfitProof</div>
+        <div style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-.02em;">Maritime Geo</div>
         <div style="font-size:13px;color:#93a1b8;margin-top:4px;">See which marketing actually books you paid jobs.</div>
       </td></tr>
       <!-- Body -->
       <tr><td style="padding:36px 40px;">
         <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#1a2236;">Welcome, {{ $user->name }}!</h1>
-        <p style="margin:0 0 20px;color:#4a5568;">Your ProfitProof subscription is active. To access your dashboard and start tracking which marketing books you paid jobs, set your password below — then sign in at <a href="{{ url('/app') }}" style="color:#2563eb;">profit-funnels.in/app</a>.</p>
+        <p style="margin:0 0 20px;color:#4a5568;">Your Maritime Geo subscription is active. To access your dashboard and start tracking which marketing books you paid jobs, set your password below — then sign in at <a href="{{ url('/app') }}" style="color:#2563eb;">app.maritimegeo.ca</a>.</p>
         <p style="margin:0 0 24px;color:#4a5568;">Your login email: <strong>{{ $user->email }}</strong></p>
 
         <div style="text-align:center;margin:32px 0;">
@@ -39,7 +39,7 @@
       </td></tr>
       <!-- Footer -->
       <tr><td style="padding:20px 40px;border-top:1px solid #dde3ef;color:#9ca3af;font-size:12px;">
-        ProfitProof · Gulf Coast Painting PEI · <a href="{{ url('/') }}" style="color:#9ca3af;">profit-funnels.in</a><br>
+        Maritime Geo · <a href="{{ url('/') }}" style="color:#9ca3af;">maritimegeo.ca</a><br>
         Questions? Reply to this email and we'll help you get set up.
       </td></tr>
     </table>
