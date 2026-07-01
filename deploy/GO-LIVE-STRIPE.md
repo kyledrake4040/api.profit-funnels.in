@@ -30,19 +30,18 @@ Customer's card → your Stripe balance → automatic payout → your bank accou
 
 ## 3. Currency
 
-The app bills in **CAD** by default (`FUNNEL_SERVICE_CURRENCY=cad`,
-`config/funnel.php`). The plan prices are $99 / $249 / $499 CAD per month.
+The app bills in **USD** by default (`FUNNEL_SERVICE_CURRENCY=usd`,
+`config/funnel.php`). The plan prices are **$94 / $294 / $494 USD** per month —
+deliberately $3/mo under GoHighLevel's equivalent tiers ($97 / $297 / $497), which
+are priced in USD, so we match the market we're competing in.
 
-**Can American customers still pay?** Yes. They check out in CAD; their US bank
-converts CAD→USD on their statement automatically. Because your Stripe account
-settles in CAD, you receive CAD natively with **no Stripe FX fee**.
-
-If you'd rather *charge* in USD, set `FUNNEL_SERVICE_CURRENCY=usd`. Then a Canadian
-Stripe account receiving USD charges gets converted USD→CAD by Stripe at their
-rate (~mid-market + ~2% FX fee) on payout. For a CAD-based business selling to a
-mostly-Canadian audience, leaving it on `cad` is simplest and cheapest. (Charging
-multiple presentment currencies natively is a later upgrade via Stripe Adaptive
-Pricing.)
+**Payout note for a Canadian Stripe account.** Charges settle in USD, then Stripe
+converts USD→CAD on payout at ~mid-market + ~2% FX fee. That FX cost is the
+tradeoff for pricing head-to-head against GoHighLevel in USD. If you'd rather
+avoid the FX fee and bill Canadian customers in CAD, set
+`FUNNEL_SERVICE_CURRENCY=cad` and update the prices in `config/funnel.php` and
+`database/seeders/PlanSeeder.php` to your CAD numbers. (Charging multiple
+presentment currencies natively is a later upgrade via Stripe Adaptive Pricing.)
 
 ## 4. Set the production environment variables
 
@@ -52,8 +51,8 @@ In your host (Railway / server `.env`):
 STRIPE_SECRET=sk_live_xxx            # Developers → API keys → Secret key
 STRIPE_KEY=pk_live_xxx               # (publishable key; optional here)
 STRIPE_WEBHOOK_SECRET=whsec_xxx      # from step 5
-FUNNEL_SERVICE_CURRENCY=cad          # or usd
-APP_URL=https://api.profit-funnels.in
+FUNNEL_SERVICE_CURRENCY=usd          # or cad
+APP_URL=https://app.maritimegeo.ca
 ```
 
 Rehearse with **test keys** (`sk_test_…`) and Stripe's
@@ -66,10 +65,13 @@ Payments will succeed without this, but new customers won't get an account until
 you wire the webhook so Stripe can tell us the checkout completed.
 
 1. Stripe dashboard → **Developers → Webhooks → Add endpoint**.
-2. Endpoint URL: `https://api.profit-funnels.in/api/stripe/webhook`
-3. Events to send: at minimum **`checkout.session.completed`**.
-   (Add `invoice.paid` and `customer.subscription.deleted` later for renewals
-   and churn — not handled yet.)
+2. Endpoint URL: `https://app.maritimegeo.ca/api/stripe/webhook`
+3. Events to send — all four are handled by `StripeWebhookController`:
+   - **`checkout.session.completed`** — provisions the account + active subscription.
+   - **`customer.subscription.updated`** — renewals (extends `ends_at`) and
+     `past_due` transitions.
+   - **`customer.subscription.deleted`** — marks the subscription cancelled.
+   - **`invoice.paid`** — optional; flips an online-paid invoice to Paid.
 4. Copy the endpoint's **Signing secret** (`whsec_…`) into `STRIPE_WEBHOOK_SECRET`.
 
 The webhook signature is verified in `StripeWebhookController`; a missing/invalid
@@ -86,12 +88,19 @@ secret is rejected, so this must match.
    - an **Active** `subscriptions` row linked to the right plan.
 5. Confirm the payout appears in **Stripe → Balance**.
 
-## 7. Not done yet (honest backlog)
+## 7. Now handled (shipped since first draft)
 
-- **Onboarding email**: new accounts get a random password; they can't log in
-  until you send a set-password / verify link. (Next PR candidate.)
-- **Renewals & churn**: `invoice.paid` (extend `ends_at`) and
-  `customer.subscription.deleted` (mark cancelled) aren't handled, so long-term
-  subscription state can drift. (Next PR candidate.)
+- **Onboarding email**: new accounts are emailed a one-time set-password link the
+  moment their subscription clears (`WelcomeEmail`, queued from
+  `SubscriptionProvisioner`). Requires a working mailer + a running queue worker
+  (`php artisan queue:work`, or `QUEUE_CONNECTION=sync` for inline sends).
+- **Renewals & churn**: `customer.subscription.updated` extends `ends_at` and
+  flips `past_due`; `customer.subscription.deleted` marks the subscription
+  cancelled. Register those two events (step 5) or long-term state will drift.
+
+## 8. Still on the backlog (honest)
+
 - **Refunds/disputes**: handled in the Stripe dashboard; not reflected in the app
   DB yet.
+- **Failed-payment dunning**: `past_due` is recorded, but there's no automated
+  reminder email sequence yet.
