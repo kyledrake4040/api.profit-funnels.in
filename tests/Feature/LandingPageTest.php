@@ -39,6 +39,47 @@ class LandingPageTest extends TestCase
             ->assertSee('Get Pro');
     }
 
+    public function test_live_promo_deadline_is_shown_with_its_date(): void
+    {
+        config([
+            'funnel.promo.enabled' => true,
+            'funnel.promo.label' => '50% off your first 3 months',
+            'funnel.promo.deadline' => '2099-09-01',
+        ]);
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('50% off your first 3 months')
+            ->assertSee('Sep 1');
+    }
+
+    public function test_expired_promo_is_not_advertised(): void
+    {
+        config([
+            'funnel.promo.enabled' => true,
+            'funnel.promo.label' => '50% off your first 3 months',
+            'funnel.promo.deadline' => '2000-01-01',
+        ]);
+
+        // The page still works; it just no longer makes an expired-discount claim.
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('ProfitProof')
+            ->assertDontSee('50% off your first 3 months');
+    }
+
+    public function test_promo_can_be_disabled_outright(): void
+    {
+        config([
+            'funnel.promo.enabled' => false,
+            'funnel.promo.deadline' => '2099-09-01',
+        ]);
+
+        $this->get('/')
+            ->assertOk()
+            ->assertDontSee('New signups before');
+    }
+
     public function test_valid_lead_is_captured_into_attribution(): void
     {
         $response = $this->post('/leads', [

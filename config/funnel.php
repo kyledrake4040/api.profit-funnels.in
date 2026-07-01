@@ -107,4 +107,22 @@ return [
         'done_for_you' => 49900,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Launch promotion
+    |--------------------------------------------------------------------------
+    |
+    | The limited-time offer shown on the landing page. The deadline drives the
+    | urgency copy AND gates it: once the deadline passes the promo is hidden
+    | automatically, so the page never advertises a discount that has expired.
+    | Set FUNNEL_PROMO_ENABLED=false to hide it early, or move the deadline out.
+    |
+    */
+
+    'promo' => [
+        'enabled' => (bool) env('FUNNEL_PROMO_ENABLED', true),
+        'label' => env('FUNNEL_PROMO_LABEL', '50% off your first 3 months'),
+        'deadline' => env('FUNNEL_PROMO_DEADLINE', '2026-09-01'),
+    ],
+
 ];

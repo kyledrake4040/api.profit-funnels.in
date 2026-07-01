@@ -32,7 +32,44 @@ final class LandingController extends Controller
                 'medium' => (string) $request->query('utm_medium', ''),
                 'campaign' => (string) $request->query('utm_campaign', ''),
             ],
+            // The launch promo only renders while it is genuinely live, so the
+            // page can never advertise a discount whose deadline has passed.
+            'promo' => $this->activePromo(),
         ]);
+    }
+
+    /**
+     * The launch promotion, but only when it is enabled and its deadline is
+     * still in the future. Returns null when there is no live offer, so the
+     * view omits the urgency copy rather than advertising an expired discount.
+     *
+     * @return array{label:string,deadline:\Illuminate\Support\Carbon}|null
+     */
+    private function activePromo(): ?array
+    {
+        if (! config('funnel.promo.enabled')) {
+            return null;
+        }
+
+        $deadline = (string) config('funnel.promo.deadline', '');
+        if ($deadline === '') {
+            return null;
+        }
+
+        try {
+            $when = \Illuminate\Support\Carbon::parse($deadline)->endOfDay();
+        } catch (\Throwable) {
+            return null;
+        }
+
+        if ($when->isPast()) {
+            return null;
+        }
+
+        return [
+            'label' => (string) config('funnel.promo.label', ''),
+            'deadline' => $when,
+        ];
     }
 
     public function capture(Request $request, AttributionStore $store): RedirectResponse
