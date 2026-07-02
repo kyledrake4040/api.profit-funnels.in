@@ -21,6 +21,16 @@ jobs:
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
 
+      # Boot with a real .env (copied from the shipped example) so CI exercises
+      # the same configuration a developer gets after the standard onboarding
+      # step. This is what catches config-coupled test fragility — e.g. a test
+      # that assumes a driver the example .env does not select. phpunit.xml
+      # still pins DB_CONNECTION=sqlite / :memory:, so the DB stays isolated.
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
       # Full suite: framework-free Unit tests + Feature tests that boot the app
       # (Laravel 10) and drive the HTTP stack, including the funnel webhooks.
       - name: Run PHPUnit

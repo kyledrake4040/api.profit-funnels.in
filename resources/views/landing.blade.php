@@ -108,10 +108,12 @@
     </div>
 </nav>
 
+@if ($promo)
 <div style="background:var(--brand);color:var(--brand-ink);text-align:center;font-weight:800;
     padding:.6rem 1rem;font-size:.95rem;">
-    🎉 8 days free — then 50% off your first 3 months. New signups before Sept 1.
+    🎉 8 days free — then {{ $promo['label'] }}. New signups before {{ $promo['deadline']->format('M j') }}.
 </div>
+@endif
 
 <header class="hero">
     <div class="wrap">
@@ -215,10 +217,12 @@
         <h2>Simple, honest pricing</h2>
         <p class="lead">All prices in CAD. Cancel anytime. Every plan includes the attribution
             dashboard and your data export.</p>
+        @if ($promo)
         <p class="lead" style="font-weight:800;color:var(--brand);font-size:1.15rem;">
-            🎉 Start with <strong>8 days free</strong> — then <strong>50% off your first 3 months</strong>
-            for new signups before Sept 1.
+            🎉 Start with <strong>8 days free</strong> — then <strong>{{ $promo['label'] }}</strong>
+            for new signups before {{ $promo['deadline']->format('M j') }}.
         </p>
+        @endif
         <div style="max-width:640px;margin:0 auto 1.6rem;padding:1rem 1.2rem;border:1px solid var(--brand);
             border-radius:.8rem;background:rgba(34,197,94,.08);text-align:center;">
             <strong style="color:var(--brand)">The 30-day "show me" guarantee.</strong>

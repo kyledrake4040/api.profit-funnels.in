@@ -20,6 +20,15 @@ class FunnelWebhookTest extends TestCase
         parent::setUp();
         $this->store = base_path('storage/funnel/attribution.json');
         @unlink($this->store);
+
+        // These tests seed and assert through the JSON store and intentionally
+        // do not migrate a database. Pin the driver and path so the suite is
+        // hermetic regardless of the ambient .env (which ships
+        // FUNNEL_ATTRIBUTION_DRIVER=eloquent for production).
+        config([
+            'funnel.attribution_driver' => 'json',
+            'funnel.json_store_path' => $this->store,
+        ]);
     }
 
     protected function tearDown(): void
