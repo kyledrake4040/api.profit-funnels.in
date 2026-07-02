@@ -10,6 +10,7 @@ declare(strict_types=1);
  *   php bin/funnel schedule [days] Plan a full cadence: socials/day + GBP/day
  *   php bin/funnel build          Render everything queued (videos + GBP cards)
  *   php bin/funnel run            Publish any due posts (dry-run until connected)
+ *   php bin/funnel quote ...      Generate a mid-market job quote + written quote
  *   php bin/funnel book           Show the free-quote CTA (checkout if enabled)
  *   php bin/funnel report --days=7 Leads & revenue split by funnel vs. other
  *   php bin/funnel demo [count]   Do all of the above end-to-end
@@ -30,6 +31,10 @@ use App\Funnel\Payments\FakePaymentGateway;
 use App\Funnel\Payments\StripePaymentGateway;
 use App\Funnel\Publishing\ApiPublisher;
 use App\Funnel\Publishing\DryRunPublisher;
+use App\Funnel\Quoting\MarketRates;
+use App\Funnel\Quoting\QuoteEstimator;
+use App\Funnel\Quoting\QuoteLetter;
+use App\Funnel\Quoting\QuoteRequest;
 use App\Funnel\Scheduler;
 use App\Funnel\Storage\JsonVideoStore;
 
@@ -56,6 +61,37 @@ function daysArg(array $argv, int $default = 7): int
     }
 
     return $default;
+}
+
+/** Read a --name=value flag (string), or null if absent. */
+function flag(array $argv, string $name): ?string
+{
+    foreach ($argv as $a) {
+        if (preg_match('/^--' . preg_quote($name, '/') . '=(.*)$/s', $a, $m)) {
+            return $m[1];
+        }
+    }
+
+    return null;
+}
+
+/** Read a --name=int flag, or null if absent/non-numeric. */
+function intFlag(array $argv, string $name): ?int
+{
+    $v = flag($argv, $name);
+
+    return $v !== null && is_numeric($v) ? (int) $v : null;
+}
+
+/** Read a --name=a,b,c flag into a trimmed, non-empty list. */
+function listFlag(array $argv, string $name): array
+{
+    $v = flag($argv, $name);
+    if ($v === null || trim($v) === '') {
+        return [];
+    }
+
+    return array_values(array_filter(array_map('trim', explode(',', $v))));
 }
 
 function publishers(FunnelConfig $config): array
@@ -100,6 +136,51 @@ function doPlan(JsonVideoStore $store, ContentPlanner $planner, int $count): arr
     }
 
     return $posts;
+}
+
+// Quoting is a pure, side-effect-free utility (it never posts or charges), so
+// it runs without the FUNNEL_ENABLED gate — a painter can price a job anytime.
+if ($command === 'quote') {
+    $estimator = new QuoteEstimator(MarketRates::fromEnv(), $config->fromPriceCents, $config->currency);
+    $request = new QuoteRequest(
+        service: flag($argv, 'service') ?? QuoteRequest::SERVICE_COMBO,
+        wallAreaSqFt: intFlag($argv, 'area'),
+        storeys: intFlag($argv, 'storeys'),
+        footprintSqFt: intFlag($argv, 'footprint'),
+        sizeCategory: flag($argv, 'size'),
+        photos: listFlag($argv, 'photos'),
+        conditions: listFlag($argv, 'conditions'),
+        customerName: flag($argv, 'name'),
+        address: flag($argv, 'address'),
+    );
+
+    try {
+        $quote = $estimator->estimate($request);
+    } catch (\InvalidArgumentException $e) {
+        line('⚠️  ' . $e->getMessage());
+        line('    Try: php bin/funnel quote --service=combo --area=2000 --name="Jane" --conditions=heavy_algae');
+        exit(1);
+    }
+
+    line(str_repeat('=', 60));
+    line('  QUOTE — ' . $config->businessName);
+    line(str_repeat('=', 60));
+    line('  Service:      ' . str_replace('_', ' ', $quote->service));
+    line('  Wall area:    ' . number_format($quote->areaSqFt) . ' sq ft (' . $quote->areaSource . ', ' . $quote->confidence . ' confidence)');
+    line('  Market range: ' . $quote->marketRangeLabel());
+    line('  YOUR PRICE:   ' . $quote->amount($quote->totalCents) . ($quote->minimumApplied ? '  (minimum)' : '  (mid-market)'));
+    if ($quote->notes !== []) {
+        line();
+        foreach ($quote->notes as $note) {
+            line('  • ' . $note);
+        }
+    }
+    line();
+    line(str_repeat('-', 60));
+    line('Ready-to-send quote:');
+    line(str_repeat('-', 60));
+    line(QuoteLetter::compose($config, $request, $quote));
+    exit(0);
 }
 
 // Feature flag: the engine stays dormant until explicitly switched on, so it

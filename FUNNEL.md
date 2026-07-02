@@ -33,7 +33,36 @@ php bin/funnel plan 6      # just plan the calendar
 php bin/funnel build       # render the videos (frames + player.html [+ mp4])
 php bin/funnel run         # publish any posts that are due now
 php bin/funnel checkout    # create a checkout link
+php bin/funnel quote ...   # price a job (mid-market) + write a ready-to-send quote
 ```
+
+### Quote a job
+
+Turns a house into a fair, **mid-market** price plus a written quote you can
+send as-is. It stores the local competitor low/high band per service and charges
+the **midpoint** — not the cheapest, not the dearest — then respects your
+`FUNNEL_FROM_PRICE_CENTS` minimum and the "you only pay once it's done" promise.
+
+```bash
+# Exact price from a measured wall area:
+php bin/funnel quote --service=combo --area=2000 --name="Jane" --address="12 Water St"
+
+# Estimate from the home's footprint:
+php bin/funnel quote --service=soft_wash --storeys=2 --footprint=1100
+
+# Rough estimate from a size bucket or photos (flagged low-confidence):
+php bin/funnel quote --service=combo --size=medium
+php bin/funnel quote --service=combo --photos=front.jpg,back.jpg,left.jpg,right.jpg
+
+# Add difficulty surcharges:
+php bin/funnel quote --service=combo --area=2400 --conditions=heavy_algae,high_access
+```
+
+Services: `soft_wash`, `power_wash`, `combo`, `painting`. A photo shows the
+*condition and layout* but not exact size, so photo/size quotes come out as a
+clearly-labelled estimate to confirm on site. Tune the market bands with real
+local quotes via `QUOTE_<SERVICE>_LOW` / `QUOTE_<SERVICE>_HIGH` (e.g.
+`QUOTE_COMBO_LOW=0.50 QUOTE_COMBO_HIGH=0.80`).
 
 Output lands in `storage/funnel/`:
 
@@ -210,6 +239,7 @@ app/Funnel/
   Content/VideoBuilder.php     # renders frames + player.html [+ mp4]
   Publishing/                  # PlatformPublisher, DryRun, ApiPublisher, results
   Payments/                    # PaymentGateway, Stripe, Fake, CheckoutLink
+  Quoting/                     # QuoteEstimator, MarketRates, Quote, QuoteLetter
   Storage/JsonVideoStore.php   # JSON-backed queue
 bin/funnel                     # CLI entrypoint
 tests/Unit/Funnel/             # 20 tests covering the engine
