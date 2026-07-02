@@ -182,13 +182,15 @@ return [
         ],
     ],
     'subscription' => [
-        'status_pending' => 'Pending',
-        'status_active' => 'Active',
+        'status_pending'   => 'Pending',
+        'status_active'    => 'Active',
+        'status_past_due'  => 'Past Due',
         'status_cancelled' => 'Cancelled',
-        'status_expired' => 'Expired',
+        'status_expired'   => 'Expired',
         'status' => [
             'Pending',
             'Active',
+            'Past Due',
             'Cancelled',
             'Expired',
         ],

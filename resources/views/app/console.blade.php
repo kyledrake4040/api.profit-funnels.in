@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ProfitProof — CRM Console</title>
+    <title>Maritime Geo — CRM Console</title>
     <style>
         :root {
             --bg:#0b1220; --panel:#131c2e; --line:#243049; --ink:#e7edf7;
@@ -81,6 +81,13 @@
         .deal .dm button { padding:.15rem .5rem; font-size:.8rem; }
         .deal.Won { border-color:var(--brand); } .deal.Lost { border-color:var(--danger); opacity:.7; }
         .col .empty { font-size:.8rem; }
+
+        /* Plan cards */
+        .plan-card { background:#0e1626; border:1px solid var(--line); border-radius:.8rem;
+            padding:1rem 1.1rem; transition:border-color .15s; }
+        .plan-card:hover { border-color:var(--brand); }
+        .plan-card.active { border-color:var(--brand); }
+        .plan-card.active a.btn-primary { background:var(--line); color:var(--muted); pointer-events:none; }
     </style>
 </head>
 <body>
@@ -225,6 +232,69 @@
                     <div style="flex:0"><button class="btn-primary" type="submit">Add deal</button></div>
                 </form>
             </section>
+
+            <section class="block">
+                <h2>Billing &amp; plan</h2>
+                <div id="billingStatus" class="muted" style="font-size:.88rem;margin-bottom:1rem">Loading…</div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.8rem" id="planCards">
+                    <div class="plan-card" data-plan="starter">
+                        <div style="font-weight:800;font-size:1rem">Starter</div>
+                        <div style="color:var(--brand);font-size:1.5rem;font-weight:800;margin:.25rem 0">$94<span style="font-size:.85rem;font-weight:400;color:var(--muted)"> USD/mo</span></div>
+                        <div class="muted" style="font-size:.82rem;margin-bottom:.8rem">Full CRM + attribution dashboard</div>
+                        <a class="btn-primary" style="display:block;text-align:center;text-decoration:none;padding:.55rem 1rem;border-radius:.5rem;font-weight:700" href="/checkout/starter">Choose Starter</a>
+                    </div>
+                    <div class="plan-card" data-plan="pro">
+                        <div style="font-weight:800;font-size:1rem">Pro <span style="color:var(--brand);font-size:.75rem">POPULAR</span></div>
+                        <div style="color:var(--brand);font-size:1.5rem;font-weight:800;margin:.25rem 0">$294<span style="font-size:.85rem;font-weight:400;color:var(--muted)"> USD/mo</span></div>
+                        <div class="muted" style="font-size:.82rem;margin-bottom:.8rem">+ QuickBooks sync + multi-account</div>
+                        <a class="btn-primary" style="display:block;text-align:center;text-decoration:none;padding:.55rem 1rem;border-radius:.5rem;font-weight:700" href="/checkout/pro">Choose Pro</a>
+                    </div>
+                    <div class="plan-card" data-plan="done_for_you">
+                        <div style="font-weight:800;font-size:1rem">Done-for-you</div>
+                        <div style="color:var(--brand);font-size:1.5rem;font-weight:800;margin:.25rem 0">$494<span style="font-size:.85rem;font-weight:400;color:var(--muted)"> USD/mo</span></div>
+                        <div class="muted" style="font-size:.82rem;margin-bottom:.8rem">We set up &amp; manage everything</div>
+                        <a class="btn-primary" style="display:block;text-align:center;text-decoration:none;padding:.55rem 1rem;border-radius:.5rem;font-weight:700" href="/checkout/done_for_you">Get Started</a>
+                    </div>
+                </div>
+            </section>
+
+            <section class="block">
+                <h2>Account settings</h2>
+                <p class="muted" style="margin:0 0 .8rem;font-size:.85rem">
+                    Business details used in invoices, quote acceptance pages, and your public micro-site.
+                    <span id="siteLink" style="display:none"> · <a id="siteLinkAnchor" href="#" target="_blank">View public site ↗</a></span>
+                </p>
+                <form id="settingsForm">
+                    <div class="inline-form" style="margin-top:0">
+                        <div><label>Business name</label><input id="sBizName" placeholder="e.g. Gulf Coast Painting"></div>
+                        <div><label>City / region</label><input id="sCity" placeholder="e.g. Charlottetown, PEI"></div>
+                    </div>
+                    <div style="margin-top:.6rem">
+                        <label>Headline</label><input id="sHeadline" placeholder="One-line value prop shown on your public site">
+                    </div>
+                    <div style="margin-top:.6rem">
+                        <label>About</label>
+                        <textarea id="sAbout" rows="3" placeholder="A short description of your business…"
+                            style="width:100%;font:inherit;resize:vertical;padding:.55rem .7rem;border-radius:.5rem;border:1px solid var(--line);background:#0e1626;color:var(--ink)"></textarea>
+                    </div>
+                    <div class="inline-form" style="margin-top:.2rem">
+                        <div><label>Phone</label><input id="sPhone" placeholder="e.g. +1 902-555-0100"></div>
+                        <div><label>Public email</label><input id="sEmail" type="email" placeholder="e.g. hello@yourbiz.com"></div>
+                    </div>
+                    <div style="margin-top:.6rem">
+                        <label>Services (comma-separated)</label>
+                        <input id="sServices" placeholder="e.g. Exterior painting, Interior painting, Deck staining">
+                    </div>
+                    <div style="margin-top:.8rem;display:flex;align-items:center;gap:.6rem">
+                        <input type="checkbox" id="sPublished" style="width:auto;accent-color:var(--brand)">
+                        <label for="sPublished" style="margin:0;font-size:.9rem;color:var(--ink);font-weight:400;cursor:pointer">Publish public micro-site (clients can find and contact you)</label>
+                    </div>
+                    <div style="margin-top:1rem;display:flex;align-items:center;gap:.8rem">
+                        <button class="btn-primary" type="submit">Save settings</button>
+                        <span id="settingsSaved" class="muted" style="font-size:.85rem;display:none">Saved ✓</span>
+                    </div>
+                </form>
+            </section>
         </div>
     </main>
 </div>
@@ -234,6 +304,7 @@ const API = '/api';
 let token = localStorage.getItem('pp_token');
 let accounts = [];
 let currentAccountId = null;
+let currentUser = null;
 let pipelines = [];
 let boardPipelineId = null;
 
@@ -275,8 +346,8 @@ $('#logoutBtn').addEventListener('click', logout);
 
 /* ---- Boot ---- */
 async function boot() {
-    const me = await api('/auth/me');
-    $('#who').textContent = me.email || me.name || '';
+    currentUser = await api('/auth/me');
+    $('#who').textContent = currentUser.email || currentUser.name || '';
     $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
     await loadAccounts();
 }
@@ -316,6 +387,8 @@ async function loadAccountView() {
     renderAutomations(autos);
     setupBoard();
     await renderBoard();
+    loadSettings();
+    loadBilling();
 }
 
 function renderInvoicing(quotes, invoices, contacts) {
@@ -328,7 +401,10 @@ function renderInvoicing(quotes, invoices, contacts) {
             <td class="muted">${esc(nm(q.contact))}</td>
             <td>${money(q.total, q.currency)}</td>
             <td><span class="pill ${esc(q.status)}">${esc(q.status)}</span></td>
-            <td>${q.status === 'Accepted' ? '' : `<button class="btn-ghost" onclick="convertQuote(${q.id})">→ Invoice</button>`}</td>
+            <td>
+                ${q.accept_token && q.status !== 'Accepted' && q.status !== 'Declined' ? `<button class="btn-ghost" onclick="copyAcceptLink('${q.accept_token}')">Copy accept link</button>` : ''}
+                ${q.status !== 'Accepted' ? `<button class="btn-ghost" onclick="convertQuote(${q.id})">→ Invoice</button>` : ''}
+            </td>
         </tr>`).join('') : `<tr><td colspan="5" class="empty">No quotes yet.</td></tr>`;
 
     $('#invoicesBody').innerHTML = invoices.length ? invoices.map(v => `
@@ -364,6 +440,11 @@ window.copyPayLink = async (token) => {
     const url = `${location.origin}/pay/${token}`;
     try { await navigator.clipboard.writeText(url); alert('Pay link copied:\n' + url); }
     catch (e) { prompt('Copy this pay link and send it to your client:', url); }
+};
+window.copyAcceptLink = async (token) => {
+    const url = `${location.origin}/quote/${token}`;
+    try { await navigator.clipboard.writeText(url); alert('Accept link copied:\n' + url); }
+    catch (e) { prompt('Copy this accept link and send it to your client:', url); }
 };
 
 document.getElementById('quoteForm').addEventListener('submit', async e => {
@@ -495,7 +576,10 @@ function renderContacts(list) {
             <td class="muted">${esc(c.email) || '—'}</td>
             <td class="muted">${esc(c.company) || '—'}</td>
             <td><span class="pill ${esc(c.status)}">${esc(c.status)}</span></td>
-            <td><button class="btn-ghost" onclick="aiReply(${c.id})">✨ AI reply</button></td>
+            <td>
+                <button class="btn-ghost" onclick="showNotes(${c.id},'${esc(c.first_name)} ${esc(c.last_name||'')}')">Notes</button>
+                <button class="btn-ghost" onclick="aiReply(${c.id})">✨ AI reply</button>
+            </td>
         </tr>`).join('') : `<tr><td colspan="5" class="empty">No contacts yet — add your first below.</td></tr>`;
 }
 
@@ -649,6 +733,173 @@ $('#newAccountBtn').addEventListener('click', async () => {
 
 /* ---- Start ---- */
 if (token) { boot().catch(() => logout()); }
+
+/* ---- Account settings ---- */
+async function loadSettings() {
+    try {
+        const site = await api(`/accounts/${currentAccountId}/site`);
+        $('#sBizName').value  = site?.business_name ?? '';
+        $('#sCity').value     = site?.city ?? '';
+        $('#sHeadline').value = site?.headline ?? '';
+        $('#sAbout').value    = site?.about ?? '';
+        $('#sPhone').value    = site?.phone ?? '';
+        $('#sEmail').value    = site?.email ?? '';
+        $('#sServices').value = (site?.services ?? []).join(', ');
+        $('#sPublished').checked = !!site?.published;
+        if (site?.slug) {
+            $('#siteLinkAnchor').href = '/s/' + site.slug;
+            $('#siteLink').style.display = site.published ? '' : 'none';
+        }
+    } catch (_) { /* settings load is best-effort */ }
+}
+
+$('#settingsForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    $('#settingsSaved').style.display = 'none';
+    try {
+        const services = $('#sServices').value.split(',').map(s => s.trim()).filter(Boolean);
+        await api(`/accounts/${currentAccountId}/site`, { method:'PUT', body: JSON.stringify({
+            business_name: $('#sBizName').value,
+            city:          $('#sCity').value,
+            headline:      $('#sHeadline').value,
+            about:         $('#sAbout').value,
+            phone:         $('#sPhone').value,
+            email:         $('#sEmail').value,
+            services,
+            published:     $('#sPublished').checked,
+        })});
+        $('#settingsSaved').style.display = '';
+        await loadSettings();
+    } catch (err) { alert('Could not save settings: ' + err.message); }
+});
+
+/* ---- Contact notes modal ---- */
+let _notesContactId = null;
+
+window.showNotes = async (contactId, name) => {
+    _notesContactId = contactId;
+    document.getElementById('notesContactName').textContent = name + ' — Notes';
+    document.getElementById('notesInput').value = '';
+    document.getElementById('notesModal').classList.remove('hidden');
+    await refreshNotes();
+};
+
+window.closeNotesModal = () => {
+    document.getElementById('notesModal').classList.add('hidden');
+    _notesContactId = null;
+};
+
+async function refreshNotes() {
+    const list = document.getElementById('notesList');
+    list.innerHTML = '<div class="muted" style="padding:.6rem 0">Loading…</div>';
+    try {
+        const res = await api(`/accounts/${currentAccountId}/contacts/${_notesContactId}/notes`);
+        const notes = res?.data ?? [];
+        if (!notes.length) {
+            list.innerHTML = '<div class="muted" style="padding:.6rem 0;font-size:.88rem">No notes yet — add the first one below.</div>';
+            return;
+        }
+        list.innerHTML = notes.map(n => {
+            const ago = timeAgo(n.created_at);
+            const who = n.user?.name ? ` · ${n.user.name}` : '';
+            return `<div style="padding:.6rem 0;border-bottom:1px solid var(--line)">
+                <div style="font-size:.88rem;line-height:1.5;white-space:pre-wrap">${esc(n.body)}</div>
+                <div style="font-size:.75rem;color:var(--muted);margin-top:.25rem;display:flex;justify-content:space-between;align-items:center">
+                    <span>${ago}${who}</span>
+                    <button class="btn-ghost" style="padding:.2rem .5rem;font-size:.75rem" onclick="deleteNote(${n.id})">✕</button>
+                </div>
+            </div>`;
+        }).join('');
+    } catch (e) {
+        list.innerHTML = '<div class="muted">Could not load notes.</div>';
+    }
+}
+
+window.deleteNote = async (noteId) => {
+    await api(`/accounts/${currentAccountId}/contacts/${_notesContactId}/notes/${noteId}`, { method:'DELETE' });
+    await refreshNotes();
+};
+
+document.getElementById('notesForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const body = document.getElementById('notesInput').value.trim();
+    if (!body) return;
+    await api(`/accounts/${currentAccountId}/contacts/${_notesContactId}/notes`, {
+        method: 'POST', body: JSON.stringify({ body }),
+    });
+    document.getElementById('notesInput').value = '';
+    await refreshNotes();
+});
+
+function timeAgo(iso) {
+    const diff = Math.floor((Date.now() - new Date(iso)) / 1000);
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    return Math.floor(diff / 86400) + 'd ago';
+}
+
+/* ---- Billing & plan ---- */
+async function loadBilling() {
+    const statusEl = document.getElementById('billingStatus');
+    const cards = document.querySelectorAll('#planCards .plan-card');
+    cards.forEach(c => c.classList.remove('active'));
+
+    try {
+        const subs = await api('/subscriptions');
+        const active = Array.isArray(subs) ? subs.find(s => s.status === 'Active') : null;
+
+        if (active) {
+            const planName = active.plan?.name ?? 'Current plan';
+            const renewsAt = active.ends_at
+                ? new Date(active.ends_at).toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' })
+                : null;
+            statusEl.innerHTML = `<span style="color:var(--brand);font-weight:700">Active · ${esc(planName)}</span>`
+                + (renewsAt ? ` <span class="muted">— renews ${renewsAt}</span>` : '');
+            // Plan slugs in DB use hyphens (done-for-you); card data-plan uses underscores
+            const planKey = (active.plan?.slug ?? '').replace(/-/g, '_');
+            cards.forEach(c => {
+                if (c.dataset.plan === planKey) {
+                    c.classList.add('active');
+                    const btn = c.querySelector('a.btn-primary');
+                    if (btn) btn.textContent = 'Current plan';
+                }
+            });
+        } else {
+            // No active subscription — show trial status based on account creation date
+            const TRIAL_DAYS = 8;
+            const created = currentUser?.created_at ? new Date(currentUser.created_at) : null;
+            const daysSince = created ? Math.floor((Date.now() - created) / 86400000) : TRIAL_DAYS;
+            const daysLeft = Math.max(0, TRIAL_DAYS - daysSince);
+
+            if (daysLeft > 0) {
+                statusEl.innerHTML = `<span style="color:#fbbf24;font-weight:700">Free trial</span>`
+                    + ` <span class="muted">— ${daysLeft} day${daysLeft === 1 ? '' : 's'} remaining. Choose a plan to keep access.</span>`;
+            } else {
+                statusEl.innerHTML = `<span style="color:var(--danger);font-weight:700">Trial expired.</span>`
+                    + ` <span class="muted">Subscribe below to restore full access.</span>`;
+            }
+        }
+    } catch (_) {
+        statusEl.textContent = 'Could not load billing status.';
+    }
+}
 </script>
+
+<!-- Contact notes modal -->
+<div id="notesModal" class="hidden" style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);padding:1rem">
+    <div style="width:100%;max-width:500px;background:var(--panel);border:1px solid var(--line);border-radius:1rem;overflow:hidden;display:flex;flex-direction:column;max-height:90vh">
+        <div style="padding:1rem 1.2rem;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between">
+            <strong id="notesContactName"></strong>
+            <button class="btn-ghost" style="padding:.3rem .6rem" onclick="closeNotesModal()">✕</button>
+        </div>
+        <div id="notesList" style="flex:1;overflow-y:auto;padding:0 1.2rem"></div>
+        <form id="notesForm" style="padding:1rem 1.2rem;border-top:1px solid var(--line)">
+            <textarea id="notesInput" rows="3" placeholder="Add a note…"
+                style="width:100%;font:inherit;resize:vertical;padding:.55rem .7rem;border-radius:.5rem;border:1px solid var(--line);background:#0e1626;color:var(--ink);margin-bottom:.5rem"></textarea>
+            <button class="btn-primary" type="submit" style="width:100%">Add note</button>
+        </form>
+    </div>
+</div>
 </body>
 </html>

@@ -3,8 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ProfitProof — See which marketing actually books you paid jobs</title>
-    <meta name="description" content="ProfitProof ties every lead to real revenue, so local service businesses know exactly which marketing books paid jobs — and stop wasting ad spend.">
+    <title>Maritime Geo — See which marketing actually books you paid jobs</title>
+    <meta name="description" content="Maritime Geo ties every lead to real revenue, so local service businesses know exactly which marketing books paid jobs — and stop wasting ad spend.">
     <style>
         :root {
             --bg: #0b1220; --panel: #131c2e; --line: #243049; --ink: #e7edf7;
@@ -97,7 +97,7 @@
 <body>
 <nav>
     <div class="wrap">
-        <div class="logo">Profit<b>Proof</b></div>
+        <div class="logo"><b>Maritime Geo</b></div>
         <div class="navlinks">
             <a href="#how">How it works</a>
             <a href="#proof">Proof</a>
@@ -118,7 +118,7 @@
         <span class="pill">Attribution for local service businesses</span>
         <h1>Know <span class="hl">exactly</span> which marketing<br>books you paid jobs.</h1>
         <p class="sub">You spend on ads, posts, and SEO — but can't tell what actually puts money
-            in the bank. ProfitProof ties every lead to real revenue, so you double down on what
+            in the bank. Maritime Geo ties every lead to real revenue, so you double down on what
             works and cut what doesn't.</p>
         <div class="cta-row">
             <a href="#signup" class="btn btn-primary">Start your 8-day free trial</a>
@@ -135,7 +135,7 @@
 <section id="how">
     <div class="wrap">
         <h2>Marketing you can't measure is just guessing</h2>
-        <p class="lead">ProfitProof connects your lead source, your CRM, and your accounting into
+        <p class="lead">Maritime Geo connects your lead source, your CRM, and your accounting into
             one number: revenue per channel.</p>
         <div class="grid3">
             <div class="card">
@@ -189,7 +189,7 @@
             </div>
             <div>
                 <h3 style="margin-top:0">Built on a real engine, not slides</h3>
-                <p class="lead">This is the actual ProfitProof dashboard — the same attribution
+                <p class="lead">This is the actual Maritime Geo dashboard — the same attribution
                     engine that records leads, matches QuickBooks payments, and reports revenue by
                     channel. The numbers above are an example layout; yours fill in with your real
                     jobs.</p>
@@ -201,7 +201,7 @@
 <section>
     <div class="wrap">
         <h2>Our founding case study</h2>
-        <p class="lead">ProfitProof was built for and runs on <strong>Gulf Coast Painting PEI</strong>,
+        <p class="lead">Maritime Geo was built for and runs on <strong>Gulf Coast Painting PEI</strong>,
             a real soft-wash &amp; exterior painting business. It schedules their content, captures
             every lead from GoHighLevel, and matches paid QuickBooks invoices back to the channel
             that earned them — so they invest in what books jobs. We're onboarding our first
@@ -213,7 +213,7 @@
 <section id="pricing">
     <div class="wrap">
         <h2>Simple, honest pricing</h2>
-        <p class="lead">All prices in CAD. Cancel anytime. Every plan includes the attribution
+        <p class="lead">All prices in USD. Cancel anytime. Every plan includes the attribution
             dashboard and your data export.</p>
         <p class="lead" style="font-weight:800;color:var(--brand);font-size:1.15rem;">
             🎉 Start with <strong>8 days free</strong> — then <strong>50% off your first 3 months</strong>
@@ -222,13 +222,13 @@
         <div style="max-width:640px;margin:0 auto 1.6rem;padding:1rem 1.2rem;border:1px solid var(--brand);
             border-radius:.8rem;background:rgba(34,197,94,.08);text-align:center;">
             <strong style="color:var(--brand)">The 30-day "show me" guarantee.</strong>
-            If ProfitProof doesn't show you which channels actually book paid jobs in your first 30
+            If Maritime Geo doesn't show you which channels actually book paid jobs in your first 30
             days, email us — we refund every dollar. The risk is ours, not yours.
         </div>
         <div class="pricing">
             <div class="tier">
                 <div class="name">Starter</div>
-                <div class="price">$99<span>/mo</span></div>
+                <div class="price">$94<span>/mo</span></div>
                 <ul>
                     <li>Attribution dashboard</li>
                     <li>GoHighLevel + QuickBooks hookup</li>
@@ -239,7 +239,7 @@
             </div>
             <div class="tier feature">
                 <div class="name">Pro · most popular</div>
-                <div class="price">$249<span>/mo</span></div>
+                <div class="price">$294<span>/mo</span></div>
                 <ul>
                     <li>Everything in Starter</li>
                     <li>Automated content scheduling</li>
@@ -250,7 +250,7 @@
             </div>
             <div class="tier">
                 <div class="name">Done-for-you</div>
-                <div class="price">$499<span>/mo</span></div>
+                <div class="price">$494<span>/mo</span></div>
                 <ul>
                     <li>Everything in Pro</li>
                     <li>We run it end to end</li>
@@ -276,7 +276,7 @@
                 more it matters to know what actually books jobs. Starter is built for one business
                 doing exactly this.</p></details>
         <details><summary>How is this different from Google Analytics?</summary>
-            <p>Analytics tells you about clicks and traffic. ProfitProof tells you about <em>dollars</em> —
+            <p>Analytics tells you about clicks and traffic. Maritime Geo tells you about <em>dollars</em> —
                 it matches paid invoices back to the lead and channel that earned them, so you see
                 revenue per channel, not vanity metrics.</p></details>
         <details><summary>I'm too busy to set up another tool.</summary>
@@ -334,9 +334,9 @@
                     <label for="plan">Plan you're interested in</label>
                     <select id="plan" name="plan">
                         <option value="">Not sure yet</option>
-                        <option value="starter" @selected(old('plan')==='starter')>Starter — $99/mo</option>
-                        <option value="pro" @selected(old('plan')==='pro')>Pro — $249/mo</option>
-                        <option value="done_for_you" @selected(old('plan')==='done_for_you')>Done-for-you — $499/mo</option>
+                        <option value="starter" @selected(old('plan')==='starter')>Starter — $94/mo</option>
+                        <option value="pro" @selected(old('plan')==='pro')>Pro — $294/mo</option>
+                        <option value="done_for_you" @selected(old('plan')==='done_for_you')>Done-for-you — $494/mo</option>
                     </select>
                 </div>
                 <button type="submit" class="btn btn-primary" style="width:100%">Start my 8-day free trial →</button>
@@ -349,7 +349,7 @@
 
 <footer>
     <div class="wrap">
-        ProfitProof — revenue attribution for local service businesses.
+        Maritime Geo — revenue attribution for local service businesses.
         Built on a real, open engine. © {{ date('Y') }}
     </div>
 </footer>

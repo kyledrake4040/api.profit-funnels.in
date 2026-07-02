@@ -59,9 +59,28 @@ class CrmConsoleTest extends TestCase
             ->assertSee('Quotes &amp; Invoices', false)
             ->assertSee('/quotes')
             ->assertSee('convertQuote')
+            ->assertSee('copyAcceptLink')
             ->assertSee('payInvoice')
             ->assertSee('copyPayLink')
             ->assertSee('emailInvoice');
+    }
+
+    public function test_console_includes_contact_notes(): void
+    {
+        $this->get('/app')
+            ->assertOk()
+            ->assertSee('showNotes')
+            ->assertSee('/notes')
+            ->assertSee('deleteNote');
+    }
+
+    public function test_console_includes_account_settings(): void
+    {
+        $this->get('/app')
+            ->assertOk()
+            ->assertSee('Account settings')
+            ->assertSee('/site')
+            ->assertSee('loadSettings');
     }
 
     public function test_console_includes_the_ai_reply_action(): void
@@ -80,5 +99,16 @@ class CrmConsoleTest extends TestCase
             ->assertSee("Today's insight", false)
             ->assertSee('/dashboard/insight')
             ->assertSee('getInsight');
+    }
+
+    public function test_console_includes_the_billing_plan_section(): void
+    {
+        $this->get('/app')
+            ->assertOk()
+            ->assertSee('Billing &amp; plan', false)
+            ->assertSee('/subscriptions')
+            ->assertSee('loadBilling')
+            ->assertSee('/checkout/starter')
+            ->assertSee('/checkout/pro');
     }
 }

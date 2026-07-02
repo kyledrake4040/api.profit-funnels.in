@@ -9,7 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 /**
- * Turns the ProfitProof pricing buttons into real, recurring Stripe checkout.
+ * Turns the Maritime Geo pricing buttons into real, recurring Stripe checkout.
  *
  * If Stripe isn't configured (no STRIPE_SECRET — e.g. local/dev), it degrades
  * gracefully to the lead form so the page is never a dead end.
@@ -28,7 +28,7 @@ final class CheckoutController extends Controller
         }
 
         $link = (new StripePaymentGateway($secret))->createSubscriptionCheckout(
-            'ProfitProof ' . ucwords(str_replace('_', ' ', $plan)),
+            'Maritime Geo ' . ucwords(str_replace('_', ' ', $plan)),
             (int) $plans[$plan],
             (string) config('funnel.currency', 'usd'),
             'month',

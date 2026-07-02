@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AgencyController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AutomationController;
 use App\Http\Controllers\Api\ContactController;
+use App\Http\Controllers\Api\ContactNoteController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FunnelController;
 use App\Http\Controllers\Api\InvoiceController;
@@ -70,6 +71,12 @@ Route::middleware('auth:api')->group(function () {
             ->name('accounts.dashboard.insight');
         Route::post('accounts/{account}/contacts/{contact}/ai-reply', [ContactController::class, 'draftReply'])
             ->name('contacts.ai-reply');
+        Route::get('accounts/{account}/contacts/{contact}/notes', [ContactNoteController::class, 'index'])
+            ->name('contacts.notes.index');
+        Route::post('accounts/{account}/contacts/{contact}/notes', [ContactNoteController::class, 'store'])
+            ->name('contacts.notes.store');
+        Route::delete('accounts/{account}/contacts/{contact}/notes/{note}', [ContactNoteController::class, 'destroy'])
+            ->name('contacts.notes.destroy');
         Route::apiResource('accounts.contacts', ContactController::class);
         Route::apiResource('accounts.pipelines', PipelineController::class)
             ->only(['index', 'store', 'show', 'destroy']);

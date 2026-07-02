@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Welcome aboard — Maritime Geo</title>
+    <title>Quote accepted — {{ $businessName }}</title>
     <style>
         body { margin: 0; min-height: 100vh; display: grid; place-items: center;
             background: #0b1220; color: #e7edf7;
@@ -14,18 +14,15 @@
             background: rgba(34,197,94,.15); color: #22c55e; display: grid; place-items: center;
             font-size: 2rem; font-weight: 800; }
         h1 { margin: 0 0 .5rem; font-size: 1.6rem; }
-        p { color: #93a1b8; }
-        a.btn { display: inline-block; margin-top: 1.2rem; padding: .8rem 1.3rem;
-            border-radius: .6rem; background: #22c55e; color: #052e16; font-weight: 700; text-decoration: none; }
+        p { color: #93a1b8; margin: 0; }
     </style>
 </head>
 <body>
 <div class="card">
     <div class="check">✓</div>
-    <h1>You're in. Welcome to Maritime Geo.</h1>
-    <p>Your subscription is active. We'll email you within one business day to connect your
-        GoHighLevel and QuickBooks and switch on your dashboard.</p>
-    <a class="btn" href="/">Back to home</a>
+    <h1>Quote accepted!</h1>
+    <p>You've accepted quote {{ $quote->number }} from {{ $businessName }}.<br>
+        They'll be in touch shortly to confirm the next steps. You can close this page.</p>
 </div>
 </body>
 </html>

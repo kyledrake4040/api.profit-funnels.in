@@ -6,8 +6,10 @@ use App\Funnel\Payments\SubscriptionProvisioner;
 use App\Http\Controllers\Controller;
 use App\Jobs\SyncPaymentToHubSpot;
 use App\Models\Payment;
+use App\Models\Subscription;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -184,6 +186,12 @@ class StripeWebhookController extends Controller
             case 'payment_intent.payment_failed':
                 Log::warning('Stripe payment failed.', ['payment_id' => $payment->id]);
                 break;
+            case 'customer.subscription.updated':
+                $this->onSubscriptionUpdated($object);
+                break;
+            case 'customer.subscription.deleted':
+                $this->onSubscriptionDeleted($object);
+                break;
         }
     }
 
@@ -238,6 +246,61 @@ class StripeWebhookController extends Controller
         // failing CRM call never delays the webhook ack (and triggers Stripe
         // retries). Runs inline only when QUEUE_CONNECTION=sync.
         SyncPaymentToHubSpot::dispatch($payment);
+    }
+
+    /**
+     * Sync a Stripe subscription update into our DB.
+     * Handles renewals (extends ends_at), plan changes, and past-due transitions.
+     */
+    protected function onSubscriptionUpdated(array $object): void
+    {
+        $sub = Subscription::where('gateway', SubscriptionProvisioner::GATEWAY)
+            ->where('gateway_reference', $object['id'] ?? '')
+            ->first();
+
+        if ($sub === null) {
+            return;
+        }
+
+        $stripeStatus = $object['status'] ?? 'active';
+        $status = match ($stripeStatus) {
+            'active', 'trialing' => config('custom.subscription.status_active'),
+            'canceled'           => config('custom.subscription.status_cancelled'),
+            default              => config('custom.subscription.status_past_due'),
+        };
+
+        $endsAt = isset($object['current_period_end'])
+            ? Carbon::createFromTimestamp((int) $object['current_period_end'])
+            : $sub->ends_at;
+
+        $sub->update(['status' => $status, 'ends_at' => $endsAt]);
+
+        Log::info('Subscription updated from Stripe.', [
+            'subscription_id' => $sub->id,
+            'stripe_status'   => $stripeStatus,
+            'ends_at'         => $endsAt?->toDateString(),
+        ]);
+    }
+
+    /**
+     * Mark a Stripe subscription as cancelled in our DB.
+     */
+    protected function onSubscriptionDeleted(array $object): void
+    {
+        $sub = Subscription::where('gateway', SubscriptionProvisioner::GATEWAY)
+            ->where('gateway_reference', $object['id'] ?? '')
+            ->first();
+
+        if ($sub === null) {
+            return;
+        }
+
+        $sub->update([
+            'status'       => config('custom.subscription.status_cancelled'),
+            'cancelled_at' => Carbon::now(),
+        ]);
+
+        Log::info('Subscription cancelled from Stripe.', ['subscription_id' => $sub->id]);
     }
 
     /**

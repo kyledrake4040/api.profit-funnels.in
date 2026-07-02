@@ -103,7 +103,7 @@
 </section>
 
 <footer>
-    {{ $site->business_name }}{{ $site->city ? ' · ' . $site->city : '' }} — powered by ProfitProof
+    {{ $site->business_name }}{{ $site->city ? ' · ' . $site->city : '' }} — powered by Maritime Geo
 </footer>
 </body>
 </html>
